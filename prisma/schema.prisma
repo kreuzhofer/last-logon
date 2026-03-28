@@ -1,0 +1,285 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users & Auth ───────────────────────────────────────────────────────────
+
+model User {
+  id             Int      @id @default(autoincrement())
+  handle         String   @unique
+  realName       String?  @map("real_name")
+  email          String?  @unique
+  passwordHash   String   @map("password_hash")
+  totpSecret     String?  @map("totp_secret")
+  sshPublicKey   String?  @map("ssh_public_key")
+  accessLevel    Int      @default(20) @map("access_level")
+  location       String   @default("")
+  affiliation    String   @default("")
+  signature      String   @default("")
+  slowReveal     Boolean  @default(true) @map("slow_reveal")
+  baudRate       Int      @default(19200) @map("baud_rate")
+  totalCalls     Int      @default(0) @map("total_calls")
+  totalPosts     Int      @default(0) @map("total_posts")
+  totalUploads   Int      @default(0) @map("total_uploads")
+  totalDownloads Int      @default(0) @map("total_downloads")
+  uploadKb       Int      @default(0) @map("upload_kb")
+  downloadKb     Int      @default(0) @map("download_kb")
+  timeLimitMin   Int      @default(60) @map("time_limit_min")
+  timeUsedToday  Int      @default(0) @map("time_used_today_min")
+  firstLoginAt   DateTime? @map("first_login_at")
+  lastLoginAt    DateTime? @map("last_login_at")
+  lastLoginFrom  String?  @map("last_login_from")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  node        Node?
+  messages    Message[]
+  messageRead MessageRead[]
+  oneliners   Oneliner[]
+  pollsCreated Poll[]
+  pollVotes   PollVote[]
+  lastCallers LastCaller[]
+  gameStates  GameState[]
+  gameScores  GameScore[]
+
+  @@map("users")
+}
+
+// ─── Active Sessions ────────────────────────────────────────────────────────
+
+model Node {
+  nodeNumber    Int      @id @map("node_number")
+  userId        Int?     @unique @map("user_id")
+  remoteAddress String?  @map("remote_address")
+  connectedAt   DateTime? @map("connected_at")
+  activity      String   @default("Idle")
+  authenticated Boolean  @default(false)
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("nodes")
+}
+
+// ─── System Log ─────────────────────────────────────────────────────────────
+
+model SystemLog {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @default(now())
+  level     String
+  category  String
+  node      Int?
+  userId    Int?     @map("user_id")
+  message   String
+  metadata  String?
+
+  @@index([timestamp])
+  @@index([category])
+  @@map("system_log")
+}
+
+// ─── One-Liners ─────────────────────────────────────────────────────────────
+
+model Oneliner {
+  id       Int      @id @default(autoincrement())
+  userId   Int      @map("user_id")
+  handle   String
+  text     String
+  postedAt DateTime @default(now()) @map("posted_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("oneliners")
+}
+
+// ─── Voting Booth ───────────────────────────────────────────────────────────
+
+model Poll {
+  id        Int      @id @default(autoincrement())
+  question  String
+  createdBy Int      @map("created_by")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  creator User         @relation(fields: [createdBy], references: [id])
+  options PollOption[]
+  votes   PollVote[]
+
+  @@map("polls")
+}
+
+model PollOption {
+  id        Int    @id @default(autoincrement())
+  pollId    Int    @map("poll_id")
+  text      String
+  sortOrder Int    @default(0) @map("sort_order")
+
+  poll  Poll       @relation(fields: [pollId], references: [id])
+  votes PollVote[]
+
+  @@map("poll_options")
+}
+
+model PollVote {
+  id       Int      @id @default(autoincrement())
+  pollId   Int      @map("poll_id")
+  optionId Int      @map("option_id")
+  userId   Int      @map("user_id")
+  votedAt  DateTime @default(now()) @map("voted_at")
+
+  poll   Poll       @relation(fields: [pollId], references: [id])
+  option PollOption @relation(fields: [optionId], references: [id])
+  user   User       @relation(fields: [userId], references: [id])
+
+  @@unique([pollId, userId])
+  @@map("poll_votes")
+}
+
+// ─── Bulletins ──────────────────────────────────────────────────────────────
+
+model Bulletin {
+  id        Int      @id @default(autoincrement())
+  number    Int      @unique
+  title     String
+  artFile   String?  @map("art_file")
+  body      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("bulletins")
+}
+
+// ─── Last Callers ───────────────────────────────────────────────────────────
+
+model LastCaller {
+  id       Int      @id @default(autoincrement())
+  userId   Int      @map("user_id")
+  handle   String
+  location String?
+  node     Int?
+  loginAt  DateTime @default(now()) @map("login_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("last_callers")
+}
+
+// ─── Message System ─────────────────────────────────────────────────────────
+
+model MessageConference {
+  id             Int      @id @default(autoincrement())
+  tag            String   @unique
+  name           String
+  description    String?
+  sortOrder      Int      @default(0) @map("sort_order")
+  minAccessLevel Int      @default(20) @map("min_access_level")
+
+  areas MessageArea[]
+
+  @@map("message_conferences")
+}
+
+model MessageArea {
+  id            Int      @id @default(autoincrement())
+  conferenceId  Int      @map("conference_id")
+  tag           String   @unique
+  name          String
+  description   String?
+  sortOrder     Int      @default(0) @map("sort_order")
+  minReadLevel  Int      @default(20) @map("min_read_level")
+  minWriteLevel Int      @default(20) @map("min_write_level")
+  maxMessages   Int      @default(500) @map("max_messages")
+  bridgeConfig  String?  @map("bridge_config")
+
+  conference  MessageConference @relation(fields: [conferenceId], references: [id])
+  messages    Message[]
+  messageRead MessageRead[]
+
+  @@map("message_areas")
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  areaId     Int      @map("area_id")
+  replyToId  Int?     @map("reply_to_id")
+  fromUserId Int?     @map("from_user_id")
+  fromName   String   @map("from_name")
+  toName     String   @default("All") @map("to_name")
+  subject    String
+  body       String
+  origin     String   @default("local")
+  originId   String?  @map("origin_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  area     MessageArea @relation(fields: [areaId], references: [id])
+  replyTo  Message?    @relation("MessageThread", fields: [replyToId], references: [id])
+  replies  Message[]   @relation("MessageThread")
+  fromUser User?       @relation(fields: [fromUserId], references: [id])
+
+  @@index([areaId, createdAt])
+  @@index([origin, originId])
+  @@map("messages")
+}
+
+model MessageRead {
+  userId     Int @map("user_id")
+  areaId     Int @map("area_id")
+  lastReadId Int @default(0) @map("last_read_id")
+
+  user User        @relation(fields: [userId], references: [id])
+  area MessageArea @relation(fields: [areaId], references: [id])
+
+  @@id([userId, areaId])
+  @@map("message_read")
+}
+
+// ─── Door Games ─────────────────────────────────────────────────────────────
+
+model DoorGame {
+  id             Int     @id @default(autoincrement())
+  tag            String  @unique
+  name           String
+  description    String?
+  type           String  // 'builtin' or 'external'
+  command        String?
+  dropfileType   String  @default("DOOR32.SYS") @map("dropfile_type")
+  maxNodes       Int     @default(1) @map("max_nodes")
+  sortOrder      Int     @default(0) @map("sort_order")
+  active         Boolean @default(true)
+  minAccessLevel Int     @default(20) @map("min_access_level")
+
+  @@map("door_games")
+}
+
+model GameState {
+  id        Int      @id @default(autoincrement())
+  gameTag   String   @map("game_tag")
+  userId    Int      @map("user_id")
+  state     String   // JSON
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([gameTag, userId])
+  @@map("game_state")
+}
+
+model GameScore {
+  id       Int      @id @default(autoincrement())
+  gameTag  String   @map("game_tag")
+  userId   Int      @map("user_id")
+  handle   String
+  score    Int
+  metadata String?
+  scoredAt DateTime @default(now()) @map("scored_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([gameTag, score(sort: Desc)])
+  @@map("game_scores")
+}

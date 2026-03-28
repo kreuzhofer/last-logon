@@ -1,0 +1,56 @@
+{
+  // BBS Experience Simulator - Configuration
+  // Edit this file to customize your BBS
+
+  general: {
+    bbsName: "The Neon Underground"
+    sysopName: "The SysOp"
+    sysopEmail: "sysop@example.com"
+    tagline: "Where the 90s never ended"
+    maxNodes: 10
+    defaultTimeLimitMin: 60
+    newUserAccessLevel: 20
+  }
+
+  servers: {
+    ssh: {
+      enabled: true
+      port: 2222
+      address: "0.0.0.0"
+      hostKeyPath: "config/ssh_host_key"
+    }
+    websocket: {
+      enabled: false
+      port: 8080
+      address: "0.0.0.0"
+    }
+  }
+
+  terminal: {
+    defaultWidth: 80
+    defaultHeight: 25
+    defaultBaudRate: 19200
+    idleTimeoutSec: 300
+  }
+
+  auth: {
+    minPasswordLength: 6
+    maxLoginAttempts: 3
+    requireEmail: false
+    allow2FA: true
+    allowSshKeys: true
+  }
+
+  paths: {
+    art: "art"
+    data: "data"
+    files: "data/files"
+    logs: "data/logs"
+  }
+
+  logging: {
+    level: "info"
+    file: "data/logs/bbs.log"
+    console: true
+  }
+}

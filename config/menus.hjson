@@ -1,0 +1,44 @@
+{
+  menus: {
+    matrix: {
+      generator: "matrixMenu"
+      hotkeys: {
+        L: { action: "module", target: "login" }
+        N: { action: "module", target: "newUser" }
+        Q: { action: "disconnect" }
+      }
+      prompt: "|11Select|08: "
+    }
+
+    mainMenu: {
+      generator: "mainMenu"
+      hotkeys: {
+        M: { action: "module", target: "messageAreas" }
+        F: { action: "module", target: "fileAreas" }
+        D: { action: "module", target: "doorGames" }
+        C: { action: "module", target: "teleconference" }
+        O: { action: "module", target: "oneLiners" }
+        W: { action: "module", target: "whoIsOnline" }
+        U: { action: "module", target: "userProfile" }
+        L: { action: "module", target: "lastCallers" }
+        V: { action: "module", target: "votingBooth" }
+        B: { action: "module", target: "bulletins" }
+        S: { action: "module", target: "stats" }
+        G: { action: "module", target: "goodbye" }
+      }
+      prompt: "|11Command |08[|15Main|08]|11: "
+    }
+
+    messageAreas: {
+      generator: "messageAreaMenu"
+      hotkeys: {
+        R: { action: "module", target: "messageReader" }
+        P: { action: "module", target: "messageEditor" }
+        S: { action: "module", target: "messageScan" }
+        C: { action: "module", target: "changeMessageArea" }
+        Q: { action: "back" }
+      }
+      prompt: "|11Command |08[|15Messages|08]|11: "
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  conferences: [
+    {
+      tag: "local"
+      name: "Local Discussion"
+      description: "Topics specific to this BBS"
+      areas: [
+        {
+          tag: "local.general"
+          name: "General Discussion"
+          description: "Talk about anything and everything"
+        }
+        {
+          tag: "local.sysop"
+          name: "SysOp Announcements"
+          description: "News and updates from the SysOp"
+          minWriteLevel: 200
+        }
+      ]
+    }
+    {
+      tag: "retro"
+      name: "Retro Computing"
+      description: "Vintage hardware, software, and culture"
+      areas: [
+        {
+          tag: "retro.hardware"
+          name: "Retro Hardware"
+          description: "Vintage computers, consoles, and peripherals"
+        }
+        {
+          tag: "retro.software"
+          name: "Retro Software"
+          description: "Classic software, games, and demos"
+        }
+        {
+          tag: "retro.bbs"
+          name: "BBS Scene"
+          description: "BBS culture, history, and the modern BBS revival"
+        }
+      ]
+    }
+    {
+      tag: "tech"
+      name: "Modern Technology"
+      description: "Current tech discussion"
+      areas: [
+        {
+          tag: "tech.programming"
+          name: "Programming"
+          description: "Code, languages, tools, and techniques"
+        }
+        {
+          tag: "tech.ai"
+          name: "AI & Machine Learning"
+          description: "Artificial intelligence, LLMs, and the future"
+        }
+      ]
+    }
+  ]
+}
