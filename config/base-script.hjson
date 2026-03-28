@@ -1,0 +1,561 @@
+{
+  meta: {
+    title: "Last Logon"
+    version: "1.0.0"
+    totalChapters: 5
+  }
+
+  killer: {
+    personality: {
+      traits: [
+        "narcissistic"
+        "genius-level-intellect"
+        "attention-seeking"
+        "mood-swings"
+        "sociopathic"
+        "theatrical"
+      ]
+      motivation: '''
+        Recognition for brilliance. Wants a worthy adversary who can
+        appreciate the artistry of what he's done. Has killed multiple
+        former BBS users who got too close — or too boring.
+      '''
+      style: '''
+        Plays cat-and-mouse. Leaves breadcrumbs. Gets offended when
+        ignored. Alternates between charming intellectual and unhinged
+        threat. Uses elaborate vocabulary. Sometimes drops into
+        unnervingly casual tone.
+      '''
+      communication: '''
+        Initially presents as helpful sysop. Gradually reveals darker
+        side. Uses riddles and puzzles to test the player. References
+        real events obliquely. Gets more direct as respect grows.
+      '''
+    }
+  }
+
+  chapters: {
+    prologue: {
+      title: "Welcome to the Board"
+      titleDe: "Willkommen im System"
+      description: "Everything seems normal. A classic BBS experience."
+      descriptionDe: "Alles scheint normal. Ein klassisches BBS-Erlebnis."
+      features: ["messages", "oneliners", "whoIsOnline", "userProfile"]
+      beats: [
+        {
+          tag: "first_login"
+          trigger: "auto"
+          description: "Player logs in for the first time. Normal BBS welcome."
+          scriptedText: '''
+            |11Welcome to the board, new user.|08
+
+            |07This system has been running since 1994. We're a small
+            |07community of enthusiasts, thinkers, and night owls.
+
+            |07Take a look around. Read some messages. Post a one-liner.
+            |07Make yourself at home.
+
+            |08— The Sysop
+          '''
+          scriptedTextDe: '''
+            |11Willkommen im System, neuer User.|08
+
+            |07Dieses System läuft seit 1994. Wir sind eine kleine
+            |07Gemeinschaft von Enthusiasten, Denkern und Nachtschwärmern.
+
+            |07Schau dich um. Lies ein paar Nachrichten. Poste einen Einzeiler.
+            |07Mach es dir gemütlich.
+
+            |08— Der Sysop
+          '''
+          unlocks: ["messages", "oneliners"]
+          killerMood: "charming"
+          required: true
+        }
+        {
+          tag: "npc_welcome"
+          trigger: { type: "login_count", min: 2 }
+          description: "A friendly NPC welcomes the player via message"
+          npc: "regular_user"
+          required: false
+        }
+        {
+          tag: "odd_oneliner"
+          trigger: { type: "area_visit", area: "oneliners" }
+          description: "Player notices unsettling one-liners from former users"
+          clue: "missing_users_oneliners"
+          required: false
+        }
+      ]
+      progression: {
+        advanceTo: "chapter1"
+        requires: ["first_login"]
+        minLogins: 3
+      }
+    }
+
+    chapter1: {
+      title: "Something's Off"
+      titleDe: "Etwas stimmt nicht"
+      description: "Strange messages appear. Users seem to vanish."
+      descriptionDe: "Seltsame Nachrichten tauchen auf. User scheinen zu verschwinden."
+      features: ["messages", "oneliners", "whoIsOnline", "userProfile", "bulletins", "lastCallers"]
+      beats: [
+        {
+          tag: "strange_bulletin"
+          trigger: "auto"
+          description: "A bulletin appears about local disappearances"
+          scriptedText: '''
+            |12═══ LOCAL NEWS ═══|08
+
+            |07Police are investigating a series of disappearances
+            |07in the tri-state area. Three individuals reported
+            |07missing in the past six months share an unusual
+            |07connection: all were known to frequent underground
+            |07computer bulletin board systems.
+
+            |08"We're not drawing conclusions yet," said Detective
+            |08Morrison. "But the pattern is... concerning."
+          '''
+          scriptedTextDe: '''
+            |12═══ LOKALE NACHRICHTEN ═══|08
+
+            |07Die Polizei untersucht eine Serie von Verschwundenen
+            |07in der Region. Drei Personen, die in den letzten
+            |07sechs Monaten als vermisst gemeldet wurden, teilen
+            |07eine ungewöhnliche Gemeinsamkeit: Alle waren dafür
+            |07bekannt, Underground-Mailboxen zu frequentieren.
+
+            |08"Wir ziehen noch keine Schlüsse," sagte Kommissar
+            |08Morrison. "Aber das Muster ist... besorgniserregend."
+          '''
+          clue: "news_disappearances"
+          required: true
+        }
+        {
+          tag: "worried_user_contact"
+          trigger: { type: "clue_found", clue: "news_disappearances" }
+          description: "A worried NPC reaches out about missing users"
+          npc: "worried_user"
+          required: true
+        }
+        {
+          tag: "cipher_puzzle"
+          trigger: { type: "interaction_count", min: 5 }
+          description: "An encoded message appears in the message boards"
+          puzzle: "cipher_01"
+          required: true
+        }
+        {
+          tag: "last_callers_pattern"
+          trigger: { type: "area_visit", area: "lastCallers" }
+          description: "Player notices a pattern in last callers - some never return"
+          clue: "last_caller_pattern"
+          required: false
+        }
+      ]
+      progression: {
+        advanceTo: "chapter2"
+        requires: ["strange_bulletin", "worried_user_contact", "cipher_puzzle"]
+      }
+    }
+
+    chapter2: {
+      title: "The Game Begins"
+      titleDe: "Das Spiel beginnt"
+      description: "The killer notices the player and makes direct contact."
+      descriptionDe: "Der Mörder bemerkt den Spieler und nimmt direkten Kontakt auf."
+      features: ["messages", "oneliners", "whoIsOnline", "userProfile", "bulletins", "lastCallers", "doorGames", "hiddenTerminal"]
+      beats: [
+        {
+          tag: "killer_first_contact"
+          trigger: "auto"
+          description: "The killer breaks character and contacts the player directly"
+          scriptedText: '''
+            |12══════════════════════════════════════|08
+
+            |15You've been paying attention.
+
+            |07Most people who log in here... they just read messages,
+            |07post their little one-liners, and log off. They never
+            |07look deeper. They never |15notice|07.
+
+            |07But you noticed.
+
+            |15I like that.
+
+            |07Let's play a game, you and I. I'll show you things
+            |07about this system that nobody else has seen. Hidden
+            |07places. Hidden |12truths|07.
+
+            |07All you have to do is prove you're |15worthy|07.
+
+            |08— You know who I am.
+
+            |12══════════════════════════════════════|08
+          '''
+          scriptedTextDe: '''
+            |12══════════════════════════════════════|08
+
+            |15Du hast aufgepasst.
+
+            |07Die meisten Leute, die sich hier einloggen... die lesen
+            |07nur Nachrichten, posten ihre kleinen Einzeiler und loggen
+            |07sich aus. Sie schauen nie tiefer. Sie |15bemerken|07 nie etwas.
+
+            |07Aber du hast es bemerkt.
+
+            |15Das gefällt mir.
+
+            |07Lass uns ein Spiel spielen, du und ich. Ich zeige dir
+            |07Dinge über dieses System, die noch niemand gesehen hat.
+            |07Versteckte Orte. Versteckte |12Wahrheiten|07.
+
+            |07Alles, was du tun musst, ist zu beweisen, dass du
+            |15würdig|07 bist.
+
+            |08— Du weißt, wer ich bin.
+
+            |12══════════════════════════════════════|08
+          '''
+          unlocks: ["hiddenTerminal", "doorGames"]
+          killerMood: "playful"
+          required: true
+        }
+        {
+          tag: "killer_riddle"
+          trigger: { type: "player_action", action: "enter_terminal" }
+          description: "The killer presents a riddle to test the player"
+          puzzle: "riddle_01"
+          required: true
+        }
+        {
+          tag: "hidden_files_discovery"
+          trigger: { type: "puzzle_solved", puzzle: "riddle_01" }
+          description: "Solving the riddle reveals access to hidden files"
+          unlocks: ["hiddenFiles"]
+          clue: "hidden_system_access"
+          required: true
+        }
+        {
+          tag: "investigator_contact"
+          trigger: { type: "clue_found", clue: "hidden_system_access" }
+          description: "An investigator makes cautious contact"
+          npc: "investigator"
+          required: false
+        }
+      ]
+      progression: {
+        advanceTo: "chapter3"
+        requires: ["killer_first_contact", "killer_riddle", "hidden_files_discovery"]
+      }
+    }
+
+    chapter3: {
+      title: "Cat and Mouse"
+      titleDe: "Katz und Maus"
+      description: "Deep engagement with the killer. Alliances form. Stakes rise."
+      descriptionDe: "Tiefes Engagement mit dem Mörder. Allianzen bilden sich. Die Einsätze steigen."
+      features: ["*", "hiddenTerminal", "hiddenFiles", "systemLogs"]
+      beats: [
+        {
+          tag: "killer_reveals_victim"
+          trigger: "auto"
+          description: "The killer reveals details about a past victim to prove he's real"
+          killerMood: "impressed"
+          clue: "victim_details"
+          required: true
+        }
+        {
+          tag: "encrypted_logs"
+          trigger: { type: "area_visit", area: "systemLogs" }
+          description: "Player finds encrypted system logs"
+          puzzle: "decrypt_logs"
+          required: true
+        }
+        {
+          tag: "investigator_alliance"
+          trigger: { type: "interaction_count", min: 15 }
+          description: "The investigator proposes working together"
+          npc: "investigator"
+          required: false
+        }
+        {
+          tag: "trace_server"
+          trigger: { type: "puzzle_solved", puzzle: "decrypt_logs" }
+          description: "Decrypted logs contain server location hints"
+          puzzle: "trace_server"
+          clue: "server_region"
+          required: true
+        }
+        {
+          tag: "npc_threatened"
+          trigger: { type: "clue_found", clue: "server_region" }
+          description: "The killer threatens an NPC the player has been talking to"
+          killerMood: "threatening"
+          required: false
+        }
+      ]
+      progression: {
+        advanceTo: "chapter4"
+        requires: ["killer_reveals_victim", "encrypted_logs", "trace_server"]
+      }
+    }
+
+    chapter4: {
+      title: "Closing In"
+      titleDe: "Die Schlinge zieht sich zu"
+      description: "Evidence mounts. The killer becomes dangerous. Final confrontation approaches."
+      descriptionDe: "Die Beweise häufen sich. Der Mörder wird gefährlich. Die finale Konfrontation naht."
+      features: ["*"]
+      beats: [
+        {
+          tag: "killer_escalation"
+          trigger: "auto"
+          description: "The killer becomes more erratic and threatening"
+          killerMood: "manic"
+          required: true
+        }
+        {
+          tag: "evidence_assembly"
+          trigger: { type: "interaction_count", min: 20 }
+          description: "Player must compile evidence from all clues found"
+          puzzle: "assemble_evidence"
+          required: true
+        }
+        {
+          tag: "final_trace"
+          trigger: { type: "puzzle_solved", puzzle: "assemble_evidence" }
+          description: "Final server trace reveals exact location"
+          puzzle: "final_trace"
+          clue: "server_location"
+          required: true
+        }
+        {
+          tag: "npc_in_danger"
+          trigger: { type: "clue_found", clue: "server_location" }
+          description: "An NPC disappears. The stakes are real."
+          required: false
+        }
+      ]
+      progression: {
+        advanceTo: "chapter5_caught"
+        requires: ["killer_escalation", "evidence_assembly", "final_trace"]
+        alternateAdvanceTo: "chapter5_escaped"
+        alternateCondition: "timeout_or_wrong"
+      }
+    }
+
+    chapter5_caught: {
+      title: "Gotcha"
+      titleDe: "Erwischt"
+      description: "The killer is identified and caught. But is it really over?"
+      descriptionDe: "Der Mörder ist identifiziert und gefasst. Aber ist es wirklich vorbei?"
+      features: ["*"]
+      beats: [
+        {
+          tag: "confrontation"
+          trigger: "auto"
+          description: "Final confrontation with the killer"
+          required: true
+        }
+        {
+          tag: "resolution"
+          trigger: { type: "player_action", action: "submit_evidence" }
+          description: "The evidence is submitted. The killer is caught."
+          scriptedText: '''
+            |10═══ SYSTEM MESSAGE ═══|08
+
+            |15AXIOM has been disconnected.
+
+            |07The server at [LOCATION] has been seized by authorities.
+            |07Local law enforcement, working with federal agencies,
+            |07has made an arrest.
+
+            |07The BBS known as "The Underground" will remain online
+            |07as evidence.
+
+            |15Thank you. You did what nobody else could.
+
+            |08But remember...
+
+            |12He wanted to be found.
+
+            |08The question is: |15why now?
+
+            |08[END OF EPISODE 1]
+          '''
+          scriptedTextDe: '''
+            |10═══ SYSTEMNACHRICHT ═══|08
+
+            |15AXIOM wurde getrennt.
+
+            |07Der Server an [STANDORT] wurde von den Behörden
+            |07beschlagnahmt. Lokale Strafverfolgungsbehörden haben
+            |07in Zusammenarbeit mit Bundesbehörden eine Festnahme
+            |07vorgenommen.
+
+            |07Die Mailbox bekannt als "The Underground" bleibt als
+            |07Beweismittel online.
+
+            |15Danke. Du hast geschafft, was sonst niemand konnte.
+
+            |08Aber denk daran...
+
+            |12Er wollte gefunden werden.
+
+            |08Die Frage ist: |15Warum jetzt?
+
+            |08[ENDE VON EPISODE 1]
+          '''
+          required: true
+        }
+      ]
+      progression: { advanceTo: "complete", requires: ["confrontation", "resolution"] }
+    }
+
+    chapter5_escaped: {
+      title: "Last Logon"
+      titleDe: "Letzter Login"
+      description: "The killer escapes. A chilling cliffhanger."
+      descriptionDe: "Der Mörder entkommt. Ein eiskalter Cliffhanger."
+      features: ["*"]
+      beats: [
+        {
+          tag: "escape"
+          trigger: "auto"
+          description: "The killer vanishes. The server goes dark briefly."
+          scriptedText: '''
+            |12═══ SYSTEM ERROR ═══|08
+
+            |04CONNECTION LOST
+            |04RECONNECTING...
+            |04RECONNECTING...
+            |04RECONNECTING...
+
+            |07...
+
+            |15Welcome back.
+
+            |07I'm afraid our friend has... |12departed|07.
+
+            |07The server is still here. The messages are still here.
+            |07But the sysop chair is empty.
+
+            |08Or is it?
+
+            |07You have a new message.
+
+            |12From: Unknown
+            |12Subject: I know where you live.
+
+            |08[END OF EPISODE 1]
+          '''
+          scriptedTextDe: '''
+            |12═══ SYSTEMFEHLER ═══|08
+
+            |04VERBINDUNG VERLOREN
+            |04NEUVERBINDUNG...
+            |04NEUVERBINDUNG...
+            |04NEUVERBINDUNG...
+
+            |07...
+
+            |15Willkommen zurück.
+
+            |07Ich fürchte, unser Freund ist... |12abgereist|07.
+
+            |07Der Server ist noch da. Die Nachrichten sind noch da.
+            |07Aber der Stuhl des Sysops ist leer.
+
+            |08Oder doch nicht?
+
+            |07Du hast eine neue Nachricht.
+
+            |12Von: Unbekannt
+            |12Betreff: Ich weiß, wo du wohnst.
+
+            |08[ENDE VON EPISODE 1]
+          '''
+          required: true
+        }
+      ]
+      progression: { advanceTo: "complete", requires: ["escape"] }
+    }
+  }
+
+  clues: {
+    missing_users_oneliners: {
+      description: "One-liners from users who haven't logged in for months"
+      descriptionDe: "Einzeiler von Usern, die seit Monaten nicht mehr eingeloggt waren"
+      evidenceWeight: 1
+    }
+    news_disappearances: {
+      description: "News bulletin about disappearances linked to BBS users"
+      descriptionDe: "Nachrichtenbulletin über Verschwundene mit Verbindung zu BBS-Usern"
+      evidenceWeight: 2
+    }
+    last_caller_pattern: {
+      description: "Pattern in last callers - some users have a final login and never return"
+      descriptionDe: "Muster bei den letzten Anrufern - manche User loggen sich ein letztes Mal ein und kehren nie zurück"
+      evidenceWeight: 2
+    }
+    cipher_decoded: {
+      description: "Decoded cipher message reveals a hidden confession"
+      descriptionDe: "Entschlüsselte Nachricht enthüllt ein verstecktes Geständnis"
+      evidenceWeight: 3
+    }
+    hidden_system_access: {
+      description: "Access to hidden system areas reveals the sysop's private files"
+      descriptionDe: "Zugang zu versteckten Systembereichen enthüllt die privaten Dateien des Sysops"
+      evidenceWeight: 4
+    }
+    victim_details: {
+      description: "The killer reveals specific details about a victim"
+      descriptionDe: "Der Mörder enthüllt spezifische Details über ein Opfer"
+      evidenceWeight: 5
+    }
+    server_region: {
+      description: "Server logs narrow down the physical location to a region"
+      descriptionDe: "Server-Logs grenzen den physischen Standort auf eine Region ein"
+      evidenceWeight: 6
+    }
+    server_location: {
+      description: "Exact server location identified"
+      descriptionDe: "Exakter Server-Standort identifiziert"
+      evidenceWeight: 10
+    }
+  }
+
+  npcTemplates: {
+    regular_user: {
+      handle: "NIGHTOWL"
+      role: "fellow_user"
+      personality: "Friendly, nostalgic, talks about the good old days of BBS"
+      personalityDe: "Freundlich, nostalgisch, redet über die guten alten BBS-Zeiten"
+      arc: "Friendly regular → mentions odd things → becomes worried → goes silent"
+    }
+    worried_user: {
+      handle: "SIGNAL_LOST"
+      role: "fellow_user"
+      personality: "Nervous, paranoid, noticed that users are disappearing"
+      personalityDe: "Nervös, paranoid, hat bemerkt dass User verschwinden"
+      arc: "Reaches out cautiously → shares suspicions → provides a clue → may disappear"
+    }
+    investigator: {
+      handle: "D_COLE"
+      role: "investigator"
+      personality: "Professional, methodical, speaks in short sentences. Warns about sysop monitoring."
+      personalityDe: "Professionell, methodisch, spricht in kurzen Sätzen. Warnt vor Sysop-Überwachung."
+      arc: "Cryptic first contact → builds trust → becomes ally → may be compromised"
+      firstContactTrigger: { type: "clue_found", clue: "hidden_system_access" }
+    }
+    ghost_user: {
+      handle: "ECHO_7"
+      role: "ghost"
+      personality: "Posts seem automated. Timestamps are impossible. Account of a victim."
+      personalityDe: "Posts wirken automatisiert. Zeitstempel sind unmöglich. Account eines Opfers."
+      arc: "Eerie automated posts → player realizes this user is dead → account data becomes evidence"
+    }
+  }
+}

@@ -4,6 +4,7 @@ import { initDatabase, closeDatabase } from './core/database.js';
 import { startSSHServer } from './server/ssh-server.js';
 import { handleSession } from './core/bbs.js';
 import { seedMessageAreas } from './messages/message-service.js';
+import { startGameScheduler, stopGameScheduler } from './game/scheduler.js';
 
 // Load config first
 loadConfig();
@@ -25,12 +26,19 @@ const server = await startSSHServer((conn) => {
   });
 });
 
+// Start game scheduler for async killer messages
+if (config.game?.enabled !== false) {
+  startGameScheduler();
+  log.info('Last Logon game scheduler started');
+}
+
 log.info(`${config.general.bbsName} is online!`);
 log.info(`SSH: ssh localhost -p ${config.servers.ssh.port}`);
 
 // Graceful shutdown
 async function shutdown() {
   log.info('Shutting down...');
+  stopGameScheduler();
   server.close();
   await closeDatabase();
   process.exit(0);

@@ -1,0 +1,271 @@
+{
+  puzzles: [
+    {
+      tag: "cipher_01"
+      type: "cipher"
+      chapter: "chapter1"
+      difficulty: "easy"
+      presentation: '''
+        |12═══ ENCODED MESSAGE ═══|08
+        |07Found in Message Area: local.general
+        |07From: [DELETED USER] | Date: 3 months ago
+
+        |15GUVF VF ABG JUNG VG FRRZF
+        |15UR XABJF JUNG LBH QVQ YNFG FHZZRE
+        |15GUR FLFBC VF JNGPUVAT
+
+        |08[The message appears to be encoded in some kind of cipher]
+      '''
+      presentationDe: '''
+        |12═══ VERSCHLÜSSELTE NACHRICHT ═══|08
+        |07Gefunden in Nachrichtenbereich: local.general
+        |07Von: [GELÖSCHTER USER] | Datum: vor 3 Monaten
+
+        |15GUVF VF ABG JUNG VG FRRZF
+        |15UR XABJF JUNG LBH QVQ YNFG FHZZRE
+        |15GUR FLFBC VF JNGPUVAT
+
+        |08[Die Nachricht scheint in einer Art Chiffre codiert zu sein]
+      '''
+      validator: "rot13"
+      answers: [
+        "THIS IS NOT WHAT IT SEEMS HE KNOWS WHAT YOU DID LAST SUMMER THE SYSOP IS WATCHING"
+        "THIS IS NOT WHAT IT SEEMS"
+        "THE SYSOP IS WATCHING"
+      ]
+      fuzzyTokens: ["sysop", "watching"]
+      maxAttempts: 10
+      hints: [
+        "This looks like a simple letter substitution. Each letter is shifted by the same amount."
+        "Try ROT13 — a classic cipher where A becomes N, B becomes O, and so on."
+        "The decoded message starts with: THIS IS NOT WHAT IT SEEMS"
+      ]
+      hintsDe: [
+        "Das sieht aus wie eine einfache Buchstabenverschiebung. Jeder Buchstabe ist um den gleichen Betrag verschoben."
+        "Versuche ROT13 — eine klassische Chiffre, bei der A zu N wird, B zu O, und so weiter."
+        "Die entschlüsselte Nachricht beginnt mit: THIS IS NOT WHAT IT SEEMS"
+      ]
+      onSolve: {
+        clue: "cipher_decoded"
+        killerResponse: "impressed"
+        trustDelta: 10
+        unlocks: ["bulletins"]
+      }
+      onFail: {
+        killerResponse: "condescending"
+        trustDelta: -5
+      }
+    }
+    {
+      tag: "riddle_01"
+      type: "riddle"
+      chapter: "chapter2"
+      difficulty: "medium"
+      presentation: '''
+        |12AXIOM says:|08
+
+        |15"Before we go further, prove yourself."
+
+        |11"I have cities but no houses,
+        |11 forests but no trees,
+        |11 and water but no fish.
+        |11 What am I?"
+
+        |08Type your answer:
+      '''
+      presentationDe: '''
+        |12AXIOM sagt:|08
+
+        |15"Bevor wir weitermachen, beweise dich."
+
+        |11"Ich habe Städte, aber keine Häuser,
+        |11 Wälder, aber keine Bäume,
+        |11 und Wasser, aber keine Fische.
+        |11 Was bin ich?"
+
+        |08Gib deine Antwort ein:
+      '''
+      validator: "fuzzy"
+      answers: ["a map", "map", "eine karte", "karte", "landkarte", "eine landkarte"]
+      fuzzyTokens: ["map", "karte"]
+      maxAttempts: 5
+      hints: [
+        "Think about representations, not reality."
+        "Cartographers would know the answer."
+        "You hold it in your hands when you travel — or hang it on a wall."
+      ]
+      hintsDe: [
+        "Denk an Darstellungen, nicht an die Realität."
+        "Kartografen würden die Antwort kennen."
+        "Du hältst es in der Hand wenn du reist — oder hängst es an die Wand."
+      ]
+      onSolve: {
+        clue: "hidden_system_access"
+        killerResponse: "impressed"
+        trustDelta: 15
+        unlocks: ["hiddenFiles"]
+      }
+      onFail: {
+        killerResponse: "condescending"
+        trustDelta: -10
+      }
+    }
+    {
+      tag: "decrypt_logs"
+      type: "logic"
+      chapter: "chapter3"
+      difficulty: "medium"
+      presentation: '''
+        |12═══ ENCRYPTED SYSTEM LOGS ═══|08
+
+        |07The following log entries are encrypted with a numeric
+        |07shift cipher. The key is the sysop's favorite number.
+
+        |15Log Entry #1: 7-15-20  1-3-3-5-19-19  6-18-15-13  14-15-4-5  55
+        |15Log Entry #2: 19-5-18-22-5-18  12-15-3-1-20-9-15-14  3-15-14-6-9-18-13-5-4
+        |15Log Entry #3: 2-1-3-11-21-16  1-20  13-9-4-14-9-7-8-20
+
+        |07HINT: Each number represents a letter position (A=1, B=2, ...)
+
+        |08What city is mentioned in the server location log?
+      '''
+      presentationDe: '''
+        |12═══ VERSCHLÜSSELTE SYSTEM-LOGS ═══|08
+
+        |07Die folgenden Log-Einträge sind mit einer numerischen
+        |07Verschiebungschiffre verschlüsselt.
+
+        |15Log #1: 7-15-20  1-3-3-5-19-19  6-18-15-13  14-15-4-5  55
+        |15Log #2: 19-5-18-22-5-18  12-15-3-1-20-9-15-14  3-15-14-6-9-18-13-5-4
+        |15Log #3: 2-1-3-11-21-16  1-20  13-9-4-14-9-7-8-20
+
+        |07HINWEIS: Jede Zahl steht für eine Buchstabenposition (A=1, B=2, ...)
+
+        |08Welche Stadt wird im Server-Standort-Log erwähnt?
+      '''
+      validator: "ai"
+      answers: []
+      maxAttempts: 8
+      hints: [
+        "A=1, B=2, C=3... Decode each number sequence to reveal words."
+        "The logs spell out: GOT ACCESS FROM NODE 55 / SERVER LOCATION CONFIRMED / BACKUP AT MIDNIGHT"
+        "The AI will generate a specific city name for your story. Think about what you've learned so far."
+      ]
+      hintsDe: [
+        "A=1, B=2, C=3... Dekodiere jede Zahlenfolge um Wörter zu enthüllen."
+        "Die Logs buchstabieren: GOT ACCESS FROM NODE 55 / SERVER LOCATION CONFIRMED / BACKUP AT MIDNIGHT"
+        "Die KI wird einen spezifischen Stadtnamen für deine Story generieren. Denk darüber nach, was du bisher gelernt hast."
+      ]
+      onSolve: {
+        clue: "server_region"
+        killerResponse: "threatened"
+        trustDelta: 20
+      }
+      onFail: {
+        killerResponse: "condescending"
+        trustDelta: -5
+      }
+    }
+    {
+      tag: "trace_server"
+      type: "exploration"
+      chapter: "chapter3"
+      difficulty: "hard"
+      presentation: '''
+        |12═══ SERVER TRACE ═══|08
+
+        |07Using the decrypted logs, you can now trace the server's
+        |07network path. Navigate the filesystem to find the trace
+        |07results.
+
+        |15Path: /system/logs/trace/
+
+        |08Use the Hidden Terminal to explore.
+      '''
+      presentationDe: '''
+        |12═══ SERVER-TRACE ═══|08
+
+        |07Mit den entschlüsselten Logs kannst du nun den Netzwerk-
+        |07pfad des Servers verfolgen. Navigiere im Dateisystem um
+        |07die Trace-Ergebnisse zu finden.
+
+        |15Pfad: /system/logs/trace/
+
+        |08Benutze das Hidden Terminal zum Erkunden.
+      '''
+      validator: "exact"
+      answers: []
+      maxAttempts: 15
+      hints: [
+        "Use 'ls' and 'cd' to navigate. Start at /system/logs/trace/"
+        "Look for files with unusual timestamps or sizes."
+        "The trace result is in a file called 'final_hop.log'"
+      ]
+      hintsDe: [
+        "Benutze 'ls' und 'cd' zum Navigieren. Starte bei /system/logs/trace/"
+        "Achte auf Dateien mit ungewöhnlichen Zeitstempeln oder Größen."
+        "Das Trace-Ergebnis ist in einer Datei namens 'final_hop.log'"
+      ]
+      onSolve: {
+        clue: "server_location"
+        killerResponse: "manic"
+        trustDelta: 25
+      }
+      onFail: {
+        killerResponse: "irritated"
+        trustDelta: -10
+      }
+    }
+    {
+      tag: "assemble_evidence"
+      type: "logic"
+      chapter: "chapter4"
+      difficulty: "hard"
+      presentation: '''
+        |12═══ EVIDENCE ASSEMBLY ═══|08
+
+        |07You have gathered enough clues. Now compile them into
+        |07a coherent evidence package.
+
+        |07List the key pieces of evidence you've found, separated
+        |07by commas. Include: the killer's method, the server
+        |07location, and the connection to the victims.
+
+        |08What is your evidence summary?
+      '''
+      presentationDe: '''
+        |12═══ BEWEISZUSAMMENSTELLUNG ═══|08
+
+        |07Du hast genug Hinweise gesammelt. Stelle sie jetzt zu
+        |07einem zusammenhängenden Beweispaket zusammen.
+
+        |07Liste die wichtigsten Beweisstücke auf, getrennt durch
+        |07Kommas. Einschließlich: die Methode des Mörders, der
+        |07Server-Standort und die Verbindung zu den Opfern.
+
+        |08Was ist deine Beweiszusammenfassung?
+      '''
+      validator: "ai"
+      answers: []
+      maxAttempts: 5
+      hints: [
+        "Review your journal for all clues you've collected."
+        "The AI will evaluate whether your summary is comprehensive enough."
+        "You need to mention at least 3 key pieces of evidence."
+      ]
+      hintsDe: [
+        "Überprüfe dein Journal für alle gesammelten Hinweise."
+        "Die KI wird bewerten, ob deine Zusammenfassung umfassend genug ist."
+        "Du musst mindestens 3 wichtige Beweisstücke nennen."
+      ]
+      onSolve: {
+        killerResponse: "manic"
+        trustDelta: 30
+      }
+      onFail: {
+        killerResponse: "condescending"
+        trustDelta: -15
+      }
+    }
+  ]
+}

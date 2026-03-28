@@ -53,4 +53,14 @@
     file: "data/logs/bbs.log"
     console: true
   }
+
+  // Last Logon game configuration
+  game: {
+    enabled: true
+    aiModel: "claude-sonnet-4-20250514"
+    maxAiCallsPerMinute: 6
+    killerResponseDelayMin: 1800
+    killerResponseDelayMax: 86400
+    inactivityReminderHours: 48
+  }
 }
