@@ -87,7 +87,7 @@ async function lightbarList(
     const pageEnd = Math.min(pageStart + listRows, items.length);
     const listStartRow = frame.currentRow;
 
-    // Render visible items
+    // Render visible items — every row must fill full width to clear previous highlights
     for (let i = pageStart; i < pageEnd; i++) {
       const item = items[i]!;
       if (i === selectedIndex) {
@@ -97,14 +97,19 @@ async function lightbarList(
           resetColor(),
         );
       } else {
-        frame.writeContentLine(item.text);
+        // Pad with reset + spaces to clear any leftover background color
+        frame.writeContent(resetColor() + item.text);
+        terminal.clearToEndOfLine();
+        frame.skipLine();
       }
     }
 
     // Clear remaining rows in the list area
     const rendered = pageEnd - pageStart;
     for (let i = rendered; i < listRows; i++) {
-      frame.writeContentLine('');
+      frame.writeContent(resetColor());
+      terminal.clearToEndOfLine();
+      frame.skipLine();
     }
 
     // Page indicator
@@ -1064,45 +1069,45 @@ async function postMessage(pgId: number, session: Session, frame: ScreenFrame, r
   }
 
   frame.skipLine();
-  frame.writeContentLine(c(Color.DarkGray, 'Enter message (two blank lines to finish):'));
-  frame.writeContentLine(c(Color.DarkCyan, '─'.repeat(frame.contentWidth)));
 
-  const bodyLines: string[] = [];
-
-  // Quote original
+  // Pre-fill quote if replying
+  let prefill = '';
   if (replyTo) {
     const quoteLines = replyTo.body.split('\n').slice(0, 4);
-    for (const line of quoteLines) {
-      bodyLines.push(`> ${line}`);
-      frame.writeContentLine(c(Color.DarkGray, `> ${line}`));
-    }
-    bodyLines.push('');
-    frame.skipLine();
+    prefill = quoteLines.map(l => `> ${l}`).join('\n') + '\n\n';
   }
 
-  // Line-by-line input
-  let emptyCount = 0;
-  while (frame.remainingRows > 2) {
-    terminal.moveTo(frame.currentRow, frame.contentLeft);
-    terminal.write(c(Color.White, ''));
-    const line = await terminal.readLine({ maxLength: frame.contentWidth - 1 });
-    frame.setContentRow(frame.currentRow - frame.contentTop + 1);
+  frame.writeContentLine(c(Color.DarkGray, 'Type your message (two blank Enters or Esc to finish):'));
+  frame.writeContentLine(c(Color.DarkCyan, '─'.repeat(frame.contentWidth)));
 
-    if (line === '') {
-      emptyCount++;
-      if (emptyCount >= 2) break;
-      bodyLines.push('');
-    } else {
-      emptyCount = 0;
-      bodyLines.push(line);
+  // Show prefilled quote text
+  if (prefill) {
+    for (const line of prefill.split('\n')) {
+      frame.writeContentLine(c(Color.DarkCyan, line));
     }
   }
 
-  while (bodyLines.length > 0 && bodyLines[bodyLines.length - 1] === '') {
-    bodyLines.pop();
+  terminal.write(resetColor());
+  const editorRow = frame.currentRow;
+  const editorRows = frame.remainingRows - 2;
+
+  const bodyLines = await terminal.readTextBlock({
+    startRow: editorRow,
+    startCol: frame.contentLeft,
+    width: frame.contentWidth,
+    maxRows: editorRows,
+  });
+
+  // Prepend quote lines if replying
+  const allLines = prefill ? [...prefill.trimEnd().split('\n'), ...bodyLines] : bodyLines;
+
+  // Trim trailing empty lines
+  while (allLines.length > 0 && allLines[allLines.length - 1] === '') {
+    allLines.pop();
   }
 
-  if (bodyLines.length === 0) {
+  if (allLines.length === 0) {
+    frame.setContentRow(editorRow - frame.contentTop + editorRows);
     frame.writeContentLine(c(Color.LightRed, 'Message aborted (empty body).'));
     terminal.moveTo(frame.currentRow, frame.contentLeft);
     await terminal.pause();
@@ -1113,7 +1118,7 @@ async function postMessage(pgId: number, session: Session, frame: ScreenFrame, r
   const save = await terminal.promptYesNo(c(Color.LightCyan, 'Save this message?'));
 
   if (save) {
-    await messageService.postMessage(pgId, area.id, session.user.id, session.handle, subject, bodyLines.join('\n'), {
+    await messageService.postMessage(pgId, area.id, session.user.id, session.handle, subject, allLines.join('\n'), {
       toName,
       replyToId: replyTo?.id,
     });
@@ -1271,29 +1276,23 @@ async function writeMailScreen(pgId: number, session: Session, frame: ScreenFram
   if (!subject) return;
 
   frame.skipLine();
-  frame.writeContentLine(c(Color.DarkGray, 'Enter message (two blank lines to finish):'));
+  frame.writeContentLine(c(Color.DarkGray, 'Type your message (two blank Enters or Esc to finish):'));
   frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
 
-  const bodyLines: string[] = [];
-  let emptyCount = 0;
-  while (frame.remainingRows > 2) {
-    terminal.moveTo(frame.currentRow, frame.contentLeft);
-    terminal.write(c(Color.White, ''));
-    const line = await terminal.readLine({ maxLength: frame.contentWidth - 1 });
-    frame.setContentRow(frame.currentRow - frame.contentTop + 1);
-    if (line === '') {
-      emptyCount++;
-      if (emptyCount >= 2) break;
-      bodyLines.push('');
-    } else {
-      emptyCount = 0;
-      bodyLines.push(line);
-    }
-  }
+  terminal.write(resetColor());
+  const editorRow = frame.currentRow;
+  const editorRows = frame.remainingRows - 2;
 
-  while (bodyLines.length > 0 && bodyLines[bodyLines.length - 1] === '') bodyLines.pop();
+  const bodyLines = await terminal.readTextBlock({
+    startRow: editorRow,
+    startCol: frame.contentLeft,
+    width: frame.contentWidth,
+    maxRows: editorRows,
+  });
 
   if (bodyLines.length > 0) {
+    frame.setContentRow(editorRow - frame.contentTop + editorRows);
+    terminal.moveTo(frame.currentRow, frame.contentLeft);
     const save = await terminal.promptYesNo(c(Color.Yellow, 'Send this mail?'));
     if (save) {
       await messageService.sendMail(pgId, session.user.id, session.handle, toName, subject, bodyLines.join('\n'));

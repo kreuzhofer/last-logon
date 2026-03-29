@@ -232,6 +232,218 @@ export class Terminal {
     }
   }
 
+  /**
+   * Multi-line text editor within a bounded area.
+   * Supports: arrow keys across lines, word wrap, backspace across lines, Enter for newline.
+   * Finishes on: two consecutive blank Enter presses, or Escape.
+   * Returns the text as an array of lines.
+   */
+  async readTextBlock(options: {
+    startRow: number;
+    startCol: number;
+    width: number;
+    maxRows: number;
+  }): Promise<string[]> {
+    const { startRow, startCol, width, maxRows } = options;
+    const lines: string[] = [''];
+    let curLine = 0;
+    let curCol = 0;
+    let consecutiveEmpty = 0;
+
+    const redrawFrom = (fromLine: number) => {
+      for (let i = fromLine; i < Math.min(lines.length, maxRows); i++) {
+        this.moveTo(startRow + i, startCol);
+        this.write(lines[i]!.padEnd(width, ' '));
+      }
+      // Clear any leftover lines below
+      if (lines.length < maxRows) {
+        for (let i = lines.length; i < maxRows; i++) {
+          this.moveTo(startRow + i, startCol);
+          this.write(' '.repeat(width));
+        }
+      }
+      this.moveTo(startRow + curLine, startCol + curCol);
+    };
+
+    const placeCursor = () => {
+      this.moveTo(startRow + curLine, startCol + curCol);
+    };
+
+    // Initial cursor position
+    placeCursor();
+
+    while (true) {
+      const key = await this.readKey();
+
+      if (key.type === 'special' && key.value === 'ESCAPE') {
+        break;
+      }
+
+      if (key.type === 'ctrl' && key.value === 'C') {
+        return [];
+      }
+
+      if (key.type === 'special' && key.value === 'ENTER') {
+        const currentLine = lines[curLine] ?? '';
+        if (currentLine.length === 0) {
+          consecutiveEmpty++;
+          if (consecutiveEmpty >= 2) break;
+        } else {
+          consecutiveEmpty = 0;
+        }
+
+        // Split line at cursor
+        if (curLine < maxRows - 1) {
+          const before = currentLine.slice(0, curCol);
+          const after = currentLine.slice(curCol);
+          lines[curLine] = before;
+          lines.splice(curLine + 1, 0, after);
+          // Truncate if exceeding maxRows
+          if (lines.length > maxRows) lines.length = maxRows;
+          curLine++;
+          curCol = 0;
+          redrawFrom(curLine - 1);
+          placeCursor();
+        }
+        continue;
+      }
+
+      if (key.type === 'special' && key.value === 'BACKSPACE') {
+        consecutiveEmpty = 0;
+        if (curCol > 0) {
+          // Delete char before cursor on current line
+          const line = lines[curLine] ?? '';
+          lines[curLine] = line.slice(0, curCol - 1) + line.slice(curCol);
+          curCol--;
+          redrawFrom(curLine);
+          placeCursor();
+        } else if (curLine > 0) {
+          // Join with previous line
+          const prevLine = lines[curLine - 1] ?? '';
+          const thisLine = lines[curLine] ?? '';
+          if (prevLine.length + thisLine.length <= width) {
+            curCol = prevLine.length;
+            lines[curLine - 1] = prevLine + thisLine;
+            lines.splice(curLine, 1);
+            curLine--;
+            redrawFrom(curLine);
+            placeCursor();
+          }
+        }
+        continue;
+      }
+
+      if (key.type === 'special' && key.value === 'LEFT') {
+        if (curCol > 0) {
+          curCol--;
+        } else if (curLine > 0) {
+          curLine--;
+          curCol = (lines[curLine] ?? '').length;
+        }
+        placeCursor();
+        continue;
+      }
+
+      if (key.type === 'special' && key.value === 'RIGHT') {
+        const lineLen = (lines[curLine] ?? '').length;
+        if (curCol < lineLen) {
+          curCol++;
+        } else if (curLine < lines.length - 1) {
+          curLine++;
+          curCol = 0;
+        }
+        placeCursor();
+        continue;
+      }
+
+      if (key.type === 'special' && key.value === 'UP') {
+        if (curLine > 0) {
+          curLine--;
+          curCol = Math.min(curCol, (lines[curLine] ?? '').length);
+          placeCursor();
+        }
+        continue;
+      }
+
+      if (key.type === 'special' && key.value === 'DOWN') {
+        if (curLine < lines.length - 1) {
+          curLine++;
+          curCol = Math.min(curCol, (lines[curLine] ?? '').length);
+          placeCursor();
+        }
+        continue;
+      }
+
+      if (key.type === 'special' && key.value === 'HOME') {
+        curCol = 0;
+        placeCursor();
+        continue;
+      }
+
+      if (key.type === 'special' && key.value === 'END') {
+        curCol = (lines[curLine] ?? '').length;
+        placeCursor();
+        continue;
+      }
+
+      // Regular character input
+      if (key.type === 'char') {
+        consecutiveEmpty = 0;
+        const line = lines[curLine] ?? '';
+
+        if (line.length < width) {
+          // Insert character at cursor
+          lines[curLine] = line.slice(0, curCol) + key.value + line.slice(curCol);
+          curCol++;
+
+          // Check if line now exceeds width — word wrap
+          if ((lines[curLine] ?? '').length > width) {
+            const fullLine = lines[curLine]!;
+            // Find last space to wrap at
+            let wrapAt = fullLine.lastIndexOf(' ', width);
+            if (wrapAt <= 0) wrapAt = width;
+
+            const keep = fullLine.slice(0, wrapAt);
+            const overflow = fullLine.slice(wrapAt).trimStart();
+
+            lines[curLine] = keep;
+
+            if (curLine < maxRows - 1) {
+              // Push overflow to next line
+              const nextLine = lines[curLine + 1] ?? '';
+              if (nextLine.length === 0 || lines.length <= curLine + 1) {
+                lines.splice(curLine + 1, 0, overflow);
+              } else {
+                lines[curLine + 1] = overflow + (nextLine ? ' ' + nextLine : '');
+              }
+              if (lines.length > maxRows) lines.length = maxRows;
+
+              // Move cursor to overflow position
+              if (curCol > keep.length) {
+                curCol = curCol - wrapAt - (fullLine[wrapAt] === ' ' ? 1 : 0);
+                curLine++;
+              }
+            }
+
+            redrawFrom(curLine > 0 ? curLine - 1 : 0);
+          } else {
+            // Just redraw current line
+            this.moveTo(startRow + curLine, startCol);
+            this.write(lines[curLine]!.padEnd(width, ' '));
+          }
+          placeCursor();
+        }
+        continue;
+      }
+    }
+
+    // Trim trailing empty lines
+    while (lines.length > 0 && lines[lines.length - 1] === '') {
+      lines.pop();
+    }
+    return lines;
+  }
+
   async pause(prompt?: string): Promise<void> {
     this.writePipe(prompt ?? '|08[|15Press any key to continue|08]');
     await this.readKey();
