@@ -65,6 +65,7 @@ export async function sendKillerMessage(
 
   await db.message.create({
     data: {
+      playerGameId: game.id,
       areaId,
       fromName: game.killerAlias,
       toName: playerHandle,
@@ -92,6 +93,7 @@ export async function sendNPCMessage(
 
   await db.message.create({
     data: {
+      playerGameId: game.id,
       areaId,
       fromName: npcHandle,
       toName: playerHandle,
@@ -218,6 +220,7 @@ export async function checkAndSendNPCMessages(
         const areaId = await getOrCreateGameMessageArea();
         await db.message.create({
           data: {
+            playerGameId: game.id,
             areaId,
             fromName: npcDef.handle,
             toName: playerHandle,
@@ -243,9 +246,9 @@ export async function injectGhostOneLiners(game: PlayerGame): Promise<void> {
   const ghostDef = getNPCDef('ghost_user');
   if (!ghostDef || !ghostDef.oneLiners?.length) return;
 
-  // Check if we already injected one-liners for this game
+  // Check if we already injected one-liners for this player's game
   const existing = await db.oneliner.findFirst({
-    where: { handle: ghostDef.handle },
+    where: { playerGameId: game.id, handle: ghostDef.handle },
   });
   if (existing) return;
 
@@ -260,10 +263,11 @@ export async function injectGhostOneLiners(game: PlayerGame): Promise<void> {
 
     await db.oneliner.create({
       data: {
+        playerGameId: game.id,
         userId: game.userId,
         handle: ghostDef.handle,
         text: lineText,
-        postedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Random date in last 30 days
+        postedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
       },
     });
   }

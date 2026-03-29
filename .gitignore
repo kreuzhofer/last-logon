@@ -11,3 +11,5 @@ config/ssh_host_key.pub
 .env.local
 *.tgz
 .DS_Store
+data/test-bbs.sqlite3
+.claude/worktrees/

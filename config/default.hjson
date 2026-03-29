@@ -20,7 +20,7 @@
       hostKeyPath: "config/ssh_host_key"
     }
     websocket: {
-      enabled: false
+      enabled: true
       port: 8080
       address: "0.0.0.0"
     }

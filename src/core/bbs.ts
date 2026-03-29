@@ -48,6 +48,97 @@ function cr(): string {
   return resetColor();
 }
 
+// ─── Reusable Lightbar List ─────────────────────────────────────────────────
+// Renders a scrollable list with arrow key navigation and highlighted selection.
+
+interface LightbarItem {
+  text: string;           // Normal rendering (with ANSI colors)
+  plainText: string;      // Plain text for highlight row (no ANSI — rendered with reverse colors)
+}
+
+interface LightbarResult {
+  action: string;         // The hotkey pressed (e.g., 'ENTER', 'Q', 'W', etc.)
+  index: number;          // Selected index when action was taken
+}
+
+async function lightbarList(
+  terminal: Terminal,
+  frame: ScreenFrame,
+  items: LightbarItem[],
+  startIndex: number,
+  extraKeys: string[],    // Additional hotkeys beyond UP/DOWN/PGUP/PGDN/ENTER
+  listRows: number,       // How many rows available for the list
+): Promise<LightbarResult> {
+  let selectedIndex = startIndex;
+  let pageStart = 0;
+
+  // Ensure bounds
+  if (selectedIndex >= items.length) selectedIndex = Math.max(0, items.length - 1);
+  if (selectedIndex < pageStart) pageStart = selectedIndex;
+  if (selectedIndex >= pageStart + listRows) pageStart = selectedIndex - listRows + 1;
+
+  const allKeys = ['UP', 'DOWN', 'PAGEUP', 'PAGEDOWN', 'ENTER', ...extraKeys];
+
+  while (true) {
+    // Adjust page window
+    if (selectedIndex < pageStart) pageStart = selectedIndex;
+    if (selectedIndex >= pageStart + listRows) pageStart = selectedIndex - listRows + 1;
+
+    const pageEnd = Math.min(pageStart + listRows, items.length);
+    const listStartRow = frame.currentRow;
+
+    // Render visible items
+    for (let i = pageStart; i < pageEnd; i++) {
+      const item = items[i]!;
+      if (i === selectedIndex) {
+        frame.writeContentLine(
+          setColor(Color.White, Color.DarkCyan) +
+          padRight(item.plainText, frame.contentWidth) +
+          resetColor(),
+        );
+      } else {
+        frame.writeContentLine(item.text);
+      }
+    }
+
+    // Clear remaining rows in the list area
+    const rendered = pageEnd - pageStart;
+    for (let i = rendered; i < listRows; i++) {
+      frame.writeContentLine('');
+    }
+
+    // Page indicator
+    const totalPages = Math.ceil(items.length / listRows);
+    if (totalPages > 1) {
+      const currentPage = Math.floor(pageStart / listRows) + 1;
+      frame.writeContentLine(c(Color.DarkGray, ` Page ${currentPage}/${totalPages}`));
+    }
+
+    // Wait for input
+    const key = await terminal.readHotkey(allKeys);
+
+    switch (key) {
+      case 'UP':
+        if (selectedIndex > 0) selectedIndex--;
+        break;
+      case 'DOWN':
+        if (selectedIndex < items.length - 1) selectedIndex++;
+        break;
+      case 'PAGEUP':
+        selectedIndex = Math.max(0, selectedIndex - listRows);
+        break;
+      case 'PAGEDOWN':
+        selectedIndex = Math.min(items.length - 1, selectedIndex + listRows);
+        break;
+      default:
+        return { action: key, index: selectedIndex };
+    }
+
+    // Redraw: move cursor back to list start and re-render
+    frame.setContentRow(listStartRow - frame.contentTop);
+  }
+}
+
 // Common hotkey sets
 const HOTKEYS_MATRIX: HotkeyDef[] = [
   { key: 'L', label: 'Login' },
@@ -168,7 +259,10 @@ export async function handleSession(conn: SSHConnection): Promise<void> {
     if (err instanceof Error && err.message.includes('closed')) {
       // Connection closed, normal
     } else {
-      log.error({ error: err, node: session.nodeNumber }, 'Session error');
+      const errInfo = err instanceof Error
+        ? { message: err.message, stack: err.stack, name: err.name }
+        : { raw: String(err), type: typeof err };
+      log.error({ error: errInfo, node: session.nodeNumber }, 'Session error');
     }
   } finally {
     if (session.authenticated && session.user) {
@@ -625,7 +719,6 @@ async function messageAreaModule(session: Session, frame: ScreenFrame, pgId: num
 
     const messages = area ? await messageService.getMessages(pgId, area.id, 500) : [];
     const sorted = [...messages].reverse();
-    log.debug({ area: currentAreaTag, msgCount: sorted.length, pageStart, selectedIndex, listRows }, 'Message list render');
     const lastReadId = (session.user && area)
       ? (await getDb().messageRead.findUnique({
           where: { userId_areaId: { userId: session.user.id, areaId: area.id } },
@@ -862,45 +955,54 @@ async function changeArea(pgId: number, session: Session, frame: ScreenFrame): P
   const terminal = session.terminal;
   const config = getConfig();
 
-  frame.refresh([config.general.bbsName, 'Messages', 'Change Area'], HOTKEYS_PAUSE);
-
+  // Build area list
   const conferences = await messageService.getConferences();
   const areaList: messageService.MessageArea[] = [];
+  const items: LightbarItem[] = [];
 
   for (const conf of conferences) {
-    if (conf.tag === 'mail') continue; // Skip mail conference — it's accessed via [E] Mail
-    frame.writeContentLine(c(Color.Yellow, ` Conference: ${conf.name}`));
-    frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
-
+    if (conf.tag === 'mail' || conf.tag === 'lastlogon') continue;
     const areas = await messageService.getAreasForConference(conf.id);
     for (const a of areas) {
       areaList.push(a);
       const num = areaList.length;
       const count = await messageService.getMessageCount(pgId, a.id);
       const unread = session.user ? await messageService.getUnreadCount(pgId, a.id, session.user.id) : 0;
-      const marker = currentAreaTag === a.tag ? c(Color.White, '>') : ' ';
-      const unreadStr = unread > 0 ? c(Color.LightGreen, padRight(`${unread} new`, 8)) : c(Color.DarkGray, padRight('', 8));
+      const marker = currentAreaTag === a.tag ? '>' : ' ';
+      const unreadStr = unread > 0 ? `${unread} new` : '';
 
-      frame.writeContentLine(
-        ` ${marker} ` +
-        c(Color.LightCyan, padRight(`${num}`, 4)) +
-        c(Color.LightCyan, padRight(a.name, 30)) +
-        c(Color.DarkGray, padRight(`${count} msgs`, 10)) +
-        unreadStr,
-      );
+      const plainText = ` ${marker} ${padRight(String(num), 4)}${padRight(a.name, 30)}${padRight(`${count} msgs`, 10)}${unreadStr}`;
+      items.push({
+        text:
+          c(Color.DarkGray, ` ${marker} `) +
+          c(Color.LightCyan, padRight(String(num), 4)) +
+          c(Color.LightCyan, padRight(a.name, 30)) +
+          c(Color.DarkGray, padRight(`${count} msgs`, 10)) +
+          (unread > 0 ? c(Color.LightGreen, `${unread} new`) : ''),
+        plainText,
+      });
     }
   }
 
-  frame.skipLine();
-  terminal.moveTo(frame.currentRow, frame.contentLeft);
-  terminal.write(c(Color.Yellow, 'Select area #') + c(Color.DarkGray, ': ') + c(Color.White, ''));
-  const input = await terminal.readLine({ maxLength: 3 });
+  if (items.length === 0) return;
 
-  if (input) {
-    const num = parseInt(input, 10);
-    if (num >= 1 && num <= areaList.length) {
-      currentAreaTag = areaList[num - 1]!.tag;
-    }
+  // Find current area index
+  const currentIdx = areaList.findIndex(a => a.tag === currentAreaTag);
+
+  frame.refresh([config.general.bbsName, 'Messages', 'Change Area'], [
+    { key: '↑↓', label: 'Select' },
+    { key: 'Enter', label: 'Choose' },
+    { key: 'Q', label: 'Back' },
+  ]);
+
+  frame.writeContentLine(c(Color.Yellow, ' Select Message Area'));
+  frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
+
+  const listRows = frame.remainingRows - 3;
+  const result = await lightbarList(terminal, frame, items, Math.max(0, currentIdx), ['Q'], listRows);
+
+  if (result.action === 'ENTER' && result.index >= 0 && result.index < areaList.length) {
+    currentAreaTag = areaList[result.index]!.tag;
   }
 }
 
@@ -1069,10 +1171,20 @@ async function mailModule(pgId: number, session: Session, frame: ScreenFrame): P
   const terminal = session.terminal;
   const config = getConfig();
   if (!session.user) return;
+  let selectedIndex = 0;
 
   while (true) {
+    const mail = await messageService.getMailForUser(pgId, session.handle, 50);
+    const mailAreaId = await messageService.getMailAreaId();
+    const lastReadId = mailAreaId
+      ? (await getDb().messageRead.findUnique({
+          where: { userId_areaId: { userId: session.user.id, areaId: mailAreaId } },
+        }))?.lastReadId ?? 0
+      : 0;
+
     frame.refresh([config.general.bbsName, 'Mail'], [
-      { key: 'R', label: 'Read' },
+      { key: '↑↓', label: 'Select' },
+      { key: 'Enter', label: 'Read' },
       { key: 'W', label: 'Write' },
       { key: 'Q', label: 'Back' },
     ]);
@@ -1082,165 +1194,111 @@ async function mailModule(pgId: number, session: Session, frame: ScreenFrame): P
     );
     frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
 
-    const mail = await messageService.getMailForUser(pgId, session.handle, 50);
-
     if (mail.length === 0) {
       frame.skipLine();
       frame.writeContentLine(c(Color.DarkGray, '  No mail messages.'));
-    } else {
-      // Classic columnar list
-      frame.writeContentLine(
-        c(Color.DarkBlue, padRight(' #', 5)) +
-        c(Color.DarkBlue, padRight('From', 18)) +
-        c(Color.DarkBlue, padRight('Subject', 35)) +
-        c(Color.DarkBlue, 'Date'),
+      frame.skipLine();
+      terminal.moveTo(frame.currentRow, frame.contentLeft);
+      terminal.write(
+        c(Color.DarkGray, '[') + c(Color.Yellow, 'W') + c(Color.DarkGray, ']rite ') +
+        c(Color.DarkGray, '[') + c(Color.Yellow, 'Q') + c(Color.DarkGray, ']uit '),
       );
-      frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
+      const ch = await terminal.readHotkey(['W', 'Q']);
+      if (ch === 'Q') return;
+      if (ch === 'W') { await writeMailScreen(pgId, session, frame); continue; }
+      continue;
+    }
 
-      const mailAreaId = await messageService.getMailAreaId();
-      const lastReadId = mailAreaId
-        ? (await getDb().messageRead.findUnique({
-            where: { userId_areaId: { userId: session.user.id, areaId: mailAreaId } },
-          }))?.lastReadId ?? 0
-        : 0;
+    // Column header
+    frame.writeContentLine(
+      c(Color.DarkBlue, padRight(' #', 5)) +
+      c(Color.DarkBlue, padRight('From', 18)) +
+      c(Color.DarkBlue, padRight('Subject', 35)) +
+      c(Color.DarkBlue, 'Date'),
+    );
+    frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
 
-      for (let i = 0; i < mail.length && frame.remainingRows > 3; i++) {
-        const msg = mail[i]!;
-        const isUnread = msg.id > lastReadId;
-        const marker = isUnread ? c(Color.LightGreen, '*') : ' ';
-        frame.writeContentLine(
-          marker +
+    // Build lightbar items
+    const items: LightbarItem[] = mail.map((msg, i) => {
+      const isUnread = msg.id > lastReadId;
+      const marker = isUnread ? '*' : ' ';
+      return {
+        text:
+          c(isUnread ? Color.LightGreen : Color.DarkGray, marker) +
           c(Color.LightCyan, padRight(String(i + 1), 4)) +
           c(Color.LightCyan, padRight(truncate(msg.fromName, 17), 18)) +
           c(Color.White, padRight(truncate(msg.subject, 34), 35)) +
           c(Color.DarkGray, formatDate(msg.createdAt)),
-        );
+        plainText:
+          `${marker}${padRight(String(i + 1), 4)}${padRight(truncate(msg.fromName, 17), 18)}${padRight(truncate(msg.subject, 34), 35)}${formatDate(msg.createdAt)}`,
+      };
+    });
+
+    const listRows = frame.remainingRows - 3;
+    const result = await lightbarList(terminal, frame, items, selectedIndex, ['W', 'Q'], listRows);
+    selectedIndex = result.index;
+
+    if (result.action === 'Q') return;
+    if (result.action === 'W') { await writeMailScreen(pgId, session, frame); continue; }
+    if (result.action === 'ENTER' && mail.length > 0) {
+      // Read from selected message using the shared reader
+      const area = mailAreaId ? await messageService.getAreaByTag('mail.personal') : null;
+      if (area) {
+        await readMessageAt(pgId, session, frame, mail, result.index, area);
       }
     }
+  }
+}
 
-    frame.skipLine();
+async function writeMailScreen(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
+  const terminal = session.terminal;
+  const config = getConfig();
+  if (!session.user) return;
+
+  frame.refresh([config.general.bbsName, 'Mail', 'Write'], [{ key: 'Enter', label: 'Send' }]);
+  frame.skipLine();
+
+  terminal.moveTo(frame.currentRow, frame.contentLeft);
+  terminal.write(c(Color.DarkBlue, 'To: ') + c(Color.White, ''));
+  const toName = await terminal.readLine({ maxLength: 30 });
+  frame.setContentRow(frame.currentRow - frame.contentTop + 1);
+  if (!toName) return;
+
+  terminal.moveTo(frame.currentRow, frame.contentLeft);
+  terminal.write(c(Color.DarkBlue, 'Subject: ') + c(Color.White, ''));
+  const subject = await terminal.readLine({ maxLength: 60 });
+  frame.setContentRow(frame.currentRow - frame.contentTop + 1);
+  if (!subject) return;
+
+  frame.skipLine();
+  frame.writeContentLine(c(Color.DarkGray, 'Enter message (two blank lines to finish):'));
+  frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
+
+  const bodyLines: string[] = [];
+  let emptyCount = 0;
+  while (frame.remainingRows > 2) {
     terminal.moveTo(frame.currentRow, frame.contentLeft);
-    terminal.write(
-      c(Color.Yellow, 'Command') + c(Color.DarkGray, ' [') +
-      c(Color.White, 'R') + c(Color.DarkGray, ']ead [') +
-      c(Color.White, 'W') + c(Color.DarkGray, ']rite [') +
-      c(Color.White, 'Q') + c(Color.DarkGray, ']uit: ') + c(Color.White, ''),
-    );
-    const choice = await terminal.readHotkey(['R', 'W', 'Q']);
-
-    if (choice === 'Q') return;
-
-    if (choice === 'R' && mail.length > 0) {
-      // Read mail messages sequentially
-      let index = 0;
-      const mailAreaId = await messageService.getMailAreaId();
-
-      while (index < mail.length) {
-        const msg = mail[index]!;
-        const w = frame.contentWidth;
-
-        frame.refresh([config.general.bbsName, 'Mail', `${index + 1}/${mail.length}`], HOTKEYS_READER);
-
-        // Classic box-drawing header
-        frame.writeContentLine(c(Color.DarkGray, '┌' + '─'.repeat(w - 2) + '┐'));
-        frame.writeContentLine(
-          c(Color.DarkGray, '│') +
-          c(Color.DarkBlue, ' From : ') + c(Color.LightCyan, padRight(truncate(msg.fromName, 26), 26)) +
-          c(Color.DarkBlue, ' Date: ') + c(Color.LightCyan, padRight(formatDateTime(msg.createdAt), 17)) +
-          c(Color.DarkGray, padRight('', w - 2 - 8 - 26 - 7 - 17) + '│'),
-        );
-        frame.writeContentLine(
-          c(Color.DarkGray, '│') +
-          c(Color.DarkBlue, ' Subj : ') + c(Color.LightCyan, padRight(truncate(msg.subject, w - 12), w - 12)) +
-          c(Color.DarkGray, ' │'),
-        );
-        frame.writeContentLine(c(Color.DarkGray, '├' + '─'.repeat(w - 2) + '┤'));
-
-        const bodyLines = wordWrap(msg.body, w - 3);
-        for (const line of bodyLines) {
-          if (frame.remainingRows <= 2) break;
-          const isQuote = line.startsWith('>');
-          frame.writeContentLine(
-            c(Color.DarkGray, '│') + ' ' +
-            c(isQuote ? Color.DarkCyan : Color.LightGray, padRight(truncate(line, w - 4), w - 4)) +
-            c(Color.DarkGray, '│'),
-          );
-        }
-
-        while (frame.remainingRows > 2) {
-          frame.writeContentLine(
-            c(Color.DarkGray, '│') + ' '.repeat(w - 2) + c(Color.DarkGray, '│'),
-          );
-        }
-        frame.writeContentLine(c(Color.DarkGray, '└' + '─'.repeat(w - 2) + '┘'));
-
-        // Mark as read
-        if (mailAreaId) {
-          await messageService.markRead(session.user.id, mailAreaId, msg.id);
-        }
-
-        terminal.moveTo(frame.contentBottom, frame.contentLeft);
-        terminal.write(
-          c(Color.DarkGray, '[') + c(Color.Yellow, 'N') + c(Color.DarkGray, ']ext ') +
-          c(Color.DarkGray, '[') + c(Color.Yellow, 'P') + c(Color.DarkGray, ']rev ') +
-          c(Color.DarkGray, '[') + c(Color.Yellow, 'Q') + c(Color.DarkGray, ']uit '),
-        );
-
-        const nav = await terminal.readHotkey(['N', 'P', 'Q']);
-        if (nav === 'Q') break;
-        if (nav === 'N' && index < mail.length - 1) index++;
-        if (nav === 'P' && index > 0) index--;
-      }
+    terminal.write(c(Color.White, ''));
+    const line = await terminal.readLine({ maxLength: frame.contentWidth - 1 });
+    frame.setContentRow(frame.currentRow - frame.contentTop + 1);
+    if (line === '') {
+      emptyCount++;
+      if (emptyCount >= 2) break;
+      bodyLines.push('');
+    } else {
+      emptyCount = 0;
+      bodyLines.push(line);
     }
+  }
 
-    if (choice === 'W') {
-      // Write new mail
-      frame.refresh([config.general.bbsName, 'Mail', 'Write'], [{ key: 'Enter', label: 'Send' }]);
-      frame.skipLine();
+  while (bodyLines.length > 0 && bodyLines[bodyLines.length - 1] === '') bodyLines.pop();
 
-      terminal.moveTo(frame.currentRow, frame.contentLeft);
-      terminal.write(c(Color.DarkBlue, 'To: ') + c(Color.White, ''));
-      const toName = await terminal.readLine({ maxLength: 30 });
-      frame.setContentRow(frame.currentRow - frame.contentTop + 1);
-      if (!toName) continue;
-
-      terminal.moveTo(frame.currentRow, frame.contentLeft);
-      terminal.write(c(Color.DarkBlue, 'Subject: ') + c(Color.White, ''));
-      const subject = await terminal.readLine({ maxLength: 60 });
-      frame.setContentRow(frame.currentRow - frame.contentTop + 1);
-      if (!subject) continue;
-
-      frame.skipLine();
-      frame.writeContentLine(c(Color.DarkGray, 'Enter message (two blank lines to finish):'));
-      frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
-
-      const bodyLines: string[] = [];
-      let emptyCount = 0;
-      while (frame.remainingRows > 2) {
-        terminal.moveTo(frame.currentRow, frame.contentLeft);
-        terminal.write(c(Color.White, ''));
-        const line = await terminal.readLine({ maxLength: frame.contentWidth - 1 });
-        frame.setContentRow(frame.currentRow - frame.contentTop + 1);
-        if (line === '') {
-          emptyCount++;
-          if (emptyCount >= 2) break;
-          bodyLines.push('');
-        } else {
-          emptyCount = 0;
-          bodyLines.push(line);
-        }
-      }
-
-      while (bodyLines.length > 0 && bodyLines[bodyLines.length - 1] === '') bodyLines.pop();
-
-      if (bodyLines.length > 0) {
-        const save = await terminal.promptYesNo(c(Color.Yellow, 'Send this mail?'));
-        if (save) {
-          await messageService.sendMail(pgId, session.user.id, session.handle, toName, subject, bodyLines.join('\n'));
-          terminal.write(c(Color.LightGreen, ' Mail sent!'));
-          await new Promise((r) => setTimeout(r, 1000));
-        }
-      }
+  if (bodyLines.length > 0) {
+    const save = await terminal.promptYesNo(c(Color.Yellow, 'Send this mail?'));
+    if (save) {
+      await messageService.sendMail(pgId, session.user.id, session.handle, toName, subject, bodyLines.join('\n'));
+      terminal.write(c(Color.LightGreen, ' Mail sent!'));
+      await new Promise((r) => setTimeout(r, 1000));
     }
   }
 }

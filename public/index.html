@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Neon Underground — BBS</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0a;
+      color: #aaa;
+      font-family: 'Cascadia Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ─── Welcome Screen ─── */
+    #welcome {
+      text-align: center;
+      max-width: 600px;
+      padding: 40px;
+    }
+
+    #welcome h1 {
+      color: #55ffff;
+      font-size: 24px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    }
+
+    #welcome .tagline {
+      color: #555;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    #welcome .ascii-art {
+      color: #00aaaa;
+      font-size: 12px;
+      line-height: 1.2;
+      margin-bottom: 32px;
+      white-space: pre;
+    }
+
+    #welcome .options {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
+    #welcome button {
+      background: none;
+      border: 1px solid #00aaaa;
+      color: #55ffff;
+      font-family: inherit;
+      font-size: 16px;
+      padding: 12px 32px;
+      cursor: pointer;
+      width: 280px;
+      transition: all 0.2s;
+    }
+
+    #welcome button:hover {
+      background: #003333;
+      border-color: #55ffff;
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+    }
+
+    #welcome .ssh-info {
+      color: #555;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    #welcome .ssh-cmd {
+      color: #55ffff;
+      background: #111;
+      padding: 8px 16px;
+      border: 1px solid #333;
+      display: inline-block;
+      margin-top: 8px;
+      cursor: pointer;
+    }
+
+    #welcome .ssh-cmd:hover {
+      border-color: #55ffff;
+    }
+
+    .copied-hint {
+      color: #55ff55;
+      font-size: 12px;
+      margin-top: 4px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .copied-hint.show { opacity: 1; }
+
+    /* ─── Terminal Screen ─── */
+    #terminal-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #terminal-container {
+      position: relative;
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 8px;
+      background: #000;
+      box-shadow:
+        0 0 20px rgba(0, 255, 255, 0.1),
+        0 0 60px rgba(0, 255, 255, 0.05),
+        inset 0 0 30px rgba(0, 0, 0, 0.5);
+    }
+
+    /* CRT scanline effect */
+    #terminal-container::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15) 0px,
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      border-radius: 6px;
+    }
+
+    #status {
+      color: #666;
+      font-size: 12px;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    #status.connected { color: #0a6; }
+    #status.error { color: #a00; }
+
+    .xterm { padding: 4px; }
+
+    #disconnect-btn {
+      margin-top: 12px;
+      background: none;
+      border: 1px solid #333;
+      color: #666;
+      font-family: inherit;
+      font-size: 12px;
+      padding: 4px 16px;
+      cursor: pointer;
+    }
+
+    #disconnect-btn:hover {
+      border-color: #aa0000;
+      color: #ff5555;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Welcome Screen -->
+  <div id="welcome">
+    <div class="ascii-art">╔══════════════════════════════════════════╗
+║   ░▒▓████████▓▒░  ░▒▓████████▓▒░       ║
+║   THE NEON UNDERGROUND                  ║
+║   Bulletin Board System                 ║
+╚══════════════════════════════════════════╝</div>
+    <h1>The Neon Underground</h1>
+    <p class="tagline">Where the 90s never ended</p>
+
+    <div class="options">
+      <button id="connect-web" onclick="startTerminal()">Connect via Browser</button>
+
+      <div class="ssh-info">
+        Or connect via SSH terminal:
+        <div class="ssh-cmd" onclick="copySSH()" title="Click to copy">ssh -p 2222 anyuser@localhost</div>
+        <div class="copied-hint" id="copied-hint">Copied!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terminal Screen (hidden until connect) -->
+  <div id="terminal-screen">
+    <div id="terminal-container">
+      <div id="terminal"></div>
+    </div>
+    <div id="status">Connecting...</div>
+    <button id="disconnect-btn" onclick="disconnect()">Disconnect</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+  <script>
+    var COLS = 80;
+    var ROWS = 25;
+    var term = null;
+    var ws = null;
+    var reconnectTimer = null;
+    var intentionalDisconnect = false;
+
+    // Check if we should auto-connect (returning from refresh)
+    if (sessionStorage.getItem('bbs-connected') === 'true') {
+      startTerminal();
+    }
+
+    function copySSH() {
+      navigator.clipboard.writeText('ssh -p 2222 anyuser@localhost').then(function() {
+        var hint = document.getElementById('copied-hint');
+        hint.classList.add('show');
+        setTimeout(function() { hint.classList.remove('show'); }, 2000);
+      });
+    }
+
+    function startTerminal() {
+      sessionStorage.setItem('bbs-connected', 'true');
+      document.getElementById('welcome').style.display = 'none';
+      document.getElementById('terminal-screen').style.display = 'flex';
+
+      if (!term) {
+        term = new Terminal({
+          cols: COLS,
+          rows: ROWS,
+          cursorBlink: true,
+          cursorStyle: 'block',
+          fontFamily: '"Cascadia Mono", "Fira Code", "Consolas", "Courier New", monospace',
+          fontSize: 16,
+          lineHeight: 1.1,
+          theme: {
+            background: '#000000',
+            foreground: '#aaaaaa',
+            cursor: '#00ffff',
+            cursorAccent: '#000000',
+            selectionBackground: '#335577',
+            black: '#000000',
+            red: '#aa0000',
+            green: '#00aa00',
+            yellow: '#aa5500',
+            blue: '#0000aa',
+            magenta: '#aa00aa',
+            cyan: '#00aaaa',
+            white: '#aaaaaa',
+            brightBlack: '#555555',
+            brightRed: '#ff5555',
+            brightGreen: '#55ff55',
+            brightYellow: '#ffff55',
+            brightBlue: '#5555ff',
+            brightMagenta: '#ff55ff',
+            brightCyan: '#55ffff',
+            brightWhite: '#ffffff',
+          },
+          allowProposedApi: true,
+          scrollback: 0,
+          convertEol: false,
+        });
+
+        term.open(document.getElementById('terminal'));
+
+        term.onData(function(data) {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'input', data: data }));
+          }
+        });
+      }
+
+      connect();
+    }
+
+    function connect() {
+      intentionalDisconnect = false;
+      var statusEl = document.getElementById('status');
+      var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      var wsUrl = proto + '//' + location.host;
+
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = function() {
+        statusEl.textContent = 'Connected';
+        statusEl.className = 'connected';
+        ws.send(JSON.stringify({ type: 'resize', cols: COLS, rows: ROWS }));
+        term.focus();
+      };
+
+      ws.onmessage = function(event) {
+        try {
+          var msg = JSON.parse(event.data);
+          if (msg.type === 'output' && typeof msg.data === 'string') {
+            term.write(msg.data);
+          }
+        } catch(e) {}
+      };
+
+      ws.onclose = function() {
+        if (intentionalDisconnect) {
+          statusEl.textContent = 'Disconnected';
+          statusEl.className = 'error';
+        } else {
+          statusEl.textContent = 'Disconnected — reconnecting...';
+          statusEl.className = 'error';
+          clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(connect, 3000);
+        }
+      };
+
+      ws.onerror = function() {
+        statusEl.textContent = 'Connection error';
+        statusEl.className = 'error';
+      };
+    }
+
+    function disconnect() {
+      intentionalDisconnect = true;
+      clearTimeout(reconnectTimer);
+      sessionStorage.removeItem('bbs-connected');
+      if (ws) ws.close();
+      if (term) { term.dispose(); term = null; }
+      document.getElementById('terminal-screen').style.display = 'none';
+      document.getElementById('welcome').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
