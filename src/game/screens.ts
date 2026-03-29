@@ -23,6 +23,9 @@ import {
   showTypingIndicator,
   displayClueEntry,
 } from './narrative.js';
+import { sendMail } from '../messages/message-service.js';
+import { parsePipeCodes } from '../utils/pipe-codes.js';
+import { stripPipeCodes } from '../utils/pipe-codes.js';
 import { getKillerResponse } from './ai-engine.js';
 import { runPuzzle } from './puzzles/puzzle-engine.js';
 import { getChapter, getChapterBeats, getClueDef, getPuzzleDef } from './base-script-loader.js';
@@ -258,14 +261,38 @@ export async function processBeat(
 ): Promise<void> {
   const config = getConfig();
 
-  // Show scripted text if available
+  // Deliver scripted text — major story moments as full-screen, everything else as mail
   if (beat.scriptedText) {
-    frame.refresh([config.general.bbsName], [{ key: 'Q', label: 'Continue' }]);
-    frame.skipLine();
-    displayScriptedText(frame, beat.scriptedText, game.language, beat.scriptedTextDe);
-    frame.skipLine();
-    session.terminal.moveTo(frame.currentRow, frame.contentLeft);
-    await session.terminal.pause();
+    const text = (game.language === 'de' && beat.scriptedTextDe) ? beat.scriptedTextDe : beat.scriptedText;
+    const plainText = stripPipeCodes(text).trim();
+
+    // These beats are dramatic moments that deserve full-screen display
+    const fullScreenBeats = ['first_login', 'confrontation', 'resolution', 'escape'];
+
+    if (fullScreenBeats.includes(beat.tag)) {
+      frame.refresh([config.general.bbsName], [{ key: 'Q', label: 'Continue' }]);
+      frame.skipLine();
+      displayScriptedText(frame, beat.scriptedText, game.language, beat.scriptedTextDe);
+      frame.skipLine();
+      session.terminal.moveTo(frame.currentRow, frame.contentLeft);
+      await session.terminal.pause();
+    } else {
+      // Deliver as personal mail — feels natural within the BBS
+      const senderMap: Record<string, string> = {
+        'strange_bulletin': 'SYSTEM',
+        'killer_first_contact': game.killerAlias,
+        'killer_escalation': game.killerAlias,
+        'npc_threatened': 'D_COLE',
+        'npc_in_danger': 'SIGNAL_LOST',
+      };
+      const sender = senderMap[beat.tag] ?? 'SYSTEM';
+      const subject = beat.description ?? beat.tag;
+
+      await sendMail(game.id, 0, sender, session.handle, subject, plainText);
+
+      // Update the mail indicator
+      frame.hasNewMail = true;
+    }
   }
 
   // Apply beat effects

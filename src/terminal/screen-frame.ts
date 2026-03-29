@@ -40,6 +40,7 @@ export class ScreenFrame {
   private breadcrumb: string[] = [];
   private hotkeys: HotkeyDef[] = [];
   private cursorRow: number;
+  private _hasNewMail = false;
 
   constructor(private terminal: Terminal) {
     // Fixed 80x25 layout — classic BBS ANSI art requires exact dimensions
@@ -111,12 +112,23 @@ export class ScreenFrame {
     t.write(' ');
     t.setColor(BORDER_COLOR);
 
+    // Mail indicator on the right side
+    const mailTag = this._hasNewMail ? ' [MAIL] ' : '';
+    const mailTagLen = mailTag.length;
+
     // Fill remaining with horizontal border
     const used = 3 + crumbVisible.length + 1; // ╔═ + space + crumb + space
-    const remaining = w - used - 1; // -1 for ╗
+    const remaining = w - used - 1 - mailTagLen; // -1 for ╗, minus mail indicator
     if (remaining > 0) {
       t.write(D.horizontal.repeat(remaining));
     }
+
+    // Draw mail indicator with blinking yellow
+    if (this._hasNewMail) {
+      t.write(ansi.blink() + ansi.setColor(Color.Yellow) + mailTag + ansi.setColor(BORDER_COLOR) + ansi.sgr(0));
+      t.setColor(BORDER_COLOR);
+    }
+
     t.write(D.topRight);
   }
 
@@ -265,6 +277,18 @@ export class ScreenFrame {
     this.breadcrumb = breadcrumb;
     this.hotkeys = hotkeys;
     this.drawFrame();
+  }
+
+  /** Set the new mail indicator (shown as blinking [MAIL] in the top border) */
+  set hasNewMail(value: boolean) {
+    if (this._hasNewMail !== value) {
+      this._hasNewMail = value;
+      this.drawTopBorder();
+    }
+  }
+
+  get hasNewMail(): boolean {
+    return this._hasNewMail;
   }
 }
 

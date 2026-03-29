@@ -589,6 +589,12 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
     let game = await getPlayerGame(session.user!.id);
     const menu = buildDynamicMenu(game);
 
+    // Check for new mail and update indicator
+    if (game) {
+      const mailCount = await messageService.getUnreadMailCount(game.id, session.user!.id, session.handle);
+      frame.hasNewMail = mailCount > 0;
+    }
+
     frame.refresh([config.general.bbsName, 'Main Menu'], menu.hotkeys);
 
     frame.skipLine();

@@ -126,7 +126,7 @@ export async function getUnreadCount(playerGameId: number, areaId: number, userI
 export async function postMessage(
   playerGameId: number,
   areaId: number,
-  fromUserId: number,
+  fromUserId: number | null,
   fromName: string,
   subject: string,
   body: string,
@@ -147,11 +147,13 @@ export async function postMessage(
     },
   });
 
-  // Update user's post count
-  await db.user.update({
-    where: { id: fromUserId },
-    data: { totalPosts: { increment: 1 } },
-  });
+  // Update user's post count (skip for system/NPC messages with no user)
+  if (fromUserId) {
+    await db.user.update({
+      where: { id: fromUserId },
+      data: { totalPosts: { increment: 1 } },
+    });
+  }
 
   const area = await db.messageArea.findUnique({ where: { id: areaId }, select: { tag: true } });
 
@@ -212,7 +214,7 @@ export async function getUnreadMailCount(playerGameId: number, userId: number, u
 
 export async function sendMail(
   playerGameId: number,
-  fromUserId: number,
+  fromUserId: number | null,
   fromName: string,
   toName: string,
   subject: string,
