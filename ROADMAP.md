@@ -49,7 +49,11 @@ Key pillars:
 | Pino logging | Done | Per-module child loggers, uncaught exception/rejection handlers |
 | Typed event bus | Done | user:login, message:new, node:activity events |
 | Node allocation | Done | Max concurrent connections, node number tracking |
-| Prisma migrations | Planned | Currently using `prisma db push`; should switch to `prisma migrate` |
+| Prisma migrations | Done | Baseline migration + timezone migration applied; using `prisma migrate dev` |
+| Timezone support | Done | Auto-detected on web (Intl API), manual entry on SSH; stored in PlayerGame |
+| Mail notification indicator | Done | Blinking [MAIL] in top border when unread mail exists |
+| Multi-line text editor | Done | Terminal.readTextBlock() with arrow keys, word wrap, cross-line editing |
+| Story beats as mail | Done | Most story beats delivered as personal mail instead of cutscenes |
 
 ### BBS Features
 
@@ -174,16 +178,12 @@ Key pillars:
 
 ### P0 — Must Fix (Blocks Full Playability)
 
+- [x] **Switch to Prisma migrations** — Done. Baseline + timezone migration applied.
+- [x] **Timezone support** — Done. Auto-detect on web, manual on SSH.
+- [x] **Mail notification indicator** — Done. Blinking [MAIL] in top border.
+- [x] **Story beats as messages** — Done. Most beats delivered as personal mail, not cutscenes.
+- [ ] **5x seed content** — In progress. ~200 messages with relative timestamps, richer NPC personalities.
 - [ ] **Play-test prologue through chapter 1** with real AI
-  - Verify beat triggers fire correctly at each stage
-  - Verify NPC messages appear at the right time
-  - Verify cipher puzzle is solvable
-  - Test chapter 1 → chapter 2 progression
-
-- [ ] **Switch to Prisma migrations** for production-safe schema changes
-  - `prisma migrate dev` for development
-  - `prisma migrate deploy` for production
-  - Never reset DB without explicit user permission
 
 ### P1 — The Living BBS (Next Priority)
 
