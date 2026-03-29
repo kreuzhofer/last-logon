@@ -321,5 +321,166 @@
         trustDelta: -15
       }
     }
+    {
+      tag: "matrix_words"
+      type: "pattern"
+      chapter: "chapter1"
+      difficulty: "medium"
+      presentation: '''
+        |12═══ SIGNAL INTERCEPTION ═══|08
+
+        |07A strange data stream has been detected in the system.
+        |07Run the Matrix Rain viewer from the Games menu and
+        |07watch for words that appear in the falling characters.
+
+        |15Capture three words from the data stream to decode
+        |15the intercepted message.
+
+        |08[Play the Matrix Rain game to find the words]
+      '''
+      presentationDe: '''
+        |12═══ SIGNAL ABFANGEN ═══|08
+
+        |07Ein seltsamer Datenstrom wurde im System entdeckt.
+        |07Starte den Matrix Rain Viewer im Spielemenü und
+        |07achte auf Wörter in den fallenden Zeichen.
+
+        |15Fange drei Wörter aus dem Datenstrom ab, um die
+        |15abgefangene Nachricht zu entschlüsseln.
+
+        |08[Spiele Matrix Rain um die Wörter zu finden]
+      '''
+      validator: "contains"
+      answers: []
+      fuzzyTokens: ["axiom", "friday", "basement"]
+      maxAttempts: 20
+      hints: [
+        "Watch the Matrix Rain carefully — real words appear among the noise."
+        "The words flash briefly. Look for English words, not random characters."
+        "Three words: a name, a day, and a location."
+      ]
+      hintsDe: [
+        "Beobachte den Matrix Rain genau — echte Wörter erscheinen im Rauschen."
+        "Die Wörter blinken kurz auf. Achte auf englische Wörter."
+        "Drei Wörter: ein Name, ein Tag und ein Ort."
+      ]
+      onSolve: {
+        clue: "maintenance_pattern"
+        killerResponse: "impressed"
+        trustDelta: 15
+      }
+      onFail: {
+        killerResponse: "condescending"
+        trustDelta: -5
+      }
+    }
+    {
+      tag: "number_station"
+      type: "cipher"
+      chapter: "chapter2"
+      difficulty: "hard"
+      presentation: '''
+        |12═══ NUMBERS STATION BROADCAST ═══|08
+
+        |07A mysterious transmission has been detected on the
+        |07system's internal network. The Numbers Station game
+        |07broadcasts encoded sequences.
+
+        |15Listen to the broadcast and decode the message.
+        |15Each number represents a letter (A=1, B=2, ...).
+
+        |08[Play the Numbers Station game to hear the broadcast]
+      '''
+      presentationDe: '''
+        |12═══ ZAHLENSENDER-ÜBERTRAGUNG ═══|08
+
+        |07Eine mysteriöse Übertragung wurde im internen
+        |07Netzwerk des Systems entdeckt. Das Zahlensender-Spiel
+        |07sendet verschlüsselte Sequenzen.
+
+        |15Höre die Sendung und entschlüssle die Nachricht.
+        |15Jede Zahl steht für einen Buchstaben (A=1, B=2, ...).
+
+        |08[Spiele den Zahlensender um die Sendung zu hören]
+      '''
+      validator: "fuzzy"
+      answers: ["help me", "help", "trapped"]
+      fuzzyTokens: ["help", "trapped"]
+      maxAttempts: 15
+      hints: [
+        "Each number in the broadcast maps to a letter: 1=A, 2=B, 3=C..."
+        "Write down the numbers and convert them one by one."
+        "The message is a cry for help from someone trapped."
+      ]
+      hintsDe: [
+        "Jede Zahl der Sendung entspricht einem Buchstaben: 1=A, 2=B, 3=C..."
+        "Schreibe die Zahlen auf und konvertiere sie einzeln."
+        "Die Nachricht ist ein Hilferuf von jemandem der gefangen ist."
+      ]
+      onSolve: {
+        clue: "trapped_user"
+        killerResponse: "threatened"
+        trustDelta: 20
+        unlocks: ["systemLogs"]
+      }
+      onFail: {
+        killerResponse: "irritated"
+        trustDelta: -10
+      }
+    }
+    {
+      tag: "memory_glitch"
+      type: "pattern"
+      chapter: "chapter3"
+      difficulty: "hard"
+      presentation: '''
+        |12═══ SYSTEM MEMORY CORRUPTION ═══|08
+
+        |07The system's memory appears to be corrupted. Play
+        |07the Memory Sequence game — at higher levels, glitches
+        |07reveal fragments of deleted data.
+
+        |15Reach level 12 in the Memory Sequence to recover
+        |15the corrupted file path.
+
+        |08[Play Memory Sequence and watch for glitches]
+      '''
+      presentationDe: '''
+        |12═══ SYSTEM-SPEICHER BESCHÄDIGT ═══|08
+
+        |07Der Systemspeicher scheint beschädigt zu sein. Spiele
+        |07das Memory-Sequence-Spiel — auf höheren Leveln zeigen
+        |07Glitches Fragmente gelöschter Daten.
+
+        |15Erreiche Level 12 im Memory Sequence um den
+        |15beschädigten Dateipfad wiederherzustellen.
+
+        |08[Spiele Memory Sequence und achte auf Glitches]
+      '''
+      validator: "contains"
+      answers: []
+      fuzzyTokens: ["system", "private", "notes"]
+      maxAttempts: 30
+      hints: [
+        "Play the Memory Sequence game — glitches appear at levels 5, 8, and 12."
+        "The glitch at level 12 shows a file path. Remember it."
+        "The path leads to /system/private/ — a hidden area."
+      ]
+      hintsDe: [
+        "Spiele Memory Sequence — Glitches erscheinen bei Level 5, 8 und 12."
+        "Der Glitch bei Level 12 zeigt einen Dateipfad. Merke ihn dir."
+        "Der Pfad führt zu /system/private/ — ein versteckter Bereich."
+      ]
+      onSolve: {
+        clue: "hidden_system_access"
+        killerResponse: "manic"
+        trustDelta: 25
+        unlocks: ["hiddenFiles"]
+      }
+      onFail: {
+        killerResponse: "condescending"
+        trustDelta: -5
+      }
+    }
   ]
 }
