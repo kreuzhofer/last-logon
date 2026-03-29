@@ -4223,4 +4223,61 @@
         '''
     }
   ]
+
+  polls: [
+    {
+      question: "Best retro computing platform of all time?"
+      createdByHandle: "DARK_MATTER"
+      options: [
+        "Commodore 64"
+        "Amiga 500"
+        "Atari ST"
+        "IBM PC / DOS"
+        "Apple II"
+        "ZX Spectrum"
+      ]
+      votes: [
+        { handle: "DARK_MATTER", option: 0 }
+        { handle: "BYTE_RUNNER", option: 0 }
+        { handle: "NIGHTOWL", option: 1 }
+        { handle: "CIRCUIT_JANE", option: 3 }
+        { handle: "NEON_PULSE", option: 1 }
+      ]
+    }
+    {
+      question: "Should we add a file trading area?"
+      createdByHandle: "BYTE_RUNNER"
+      options: [
+        "Yes, definitely!"
+        "Maybe, if it's curated"
+        "No, keep it simple"
+        "Only for BBS-related files"
+      ]
+      votes: [
+        { handle: "BYTE_RUNNER", option: 0 }
+        { handle: "NIGHTOWL", option: 1 }
+        { handle: "DARK_MATTER", option: 3 }
+        { handle: "CIRCUIT_JANE", option: 1 }
+      ]
+    }
+    {
+      question: "What time do you usually log in?"
+      createdByHandle: "NIGHTOWL"
+      options: [
+        "Morning (6am-12pm)"
+        "Afternoon (12pm-6pm)"
+        "Evening (6pm-midnight)"
+        "Late night (midnight-6am)"
+        "All hours — I have no life"
+      ]
+      votes: [
+        { handle: "NIGHTOWL", option: 3 }
+        { handle: "BYTE_RUNNER", option: 2 }
+        { handle: "DARK_MATTER", option: 2 }
+        { handle: "NEON_PULSE", option: 4 }
+        { handle: "CIRCUIT_JANE", option: 2 }
+        { handle: "PHANTOM_X", option: 3 }
+      ]
+    }
+  ]
 }

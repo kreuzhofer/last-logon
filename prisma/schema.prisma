@@ -107,16 +107,19 @@ model Oneliner {
 // ─── Voting Booth ───────────────────────────────────────────────────────────
 
 model Poll {
-  id        Int      @id @default(autoincrement())
-  question  String
-  createdBy Int      @map("created_by")
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
+  id           Int      @id @default(autoincrement())
+  playerGameId Int      @map("player_game_id")
+  question     String
+  createdBy    Int      @map("created_by")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  creator User         @relation(fields: [createdBy], references: [id])
-  options PollOption[]
-  votes   PollVote[]
+  playerGame PlayerGame @relation(fields: [playerGameId], references: [id])
+  creator    User       @relation(fields: [createdBy], references: [id])
+  options    PollOption[]
+  votes      PollVote[]
 
+  @@index([playerGameId])
   @@map("polls")
 }
 
@@ -338,6 +341,7 @@ model PlayerGame {
   oneliners  Oneliner[]
   lastCallers LastCaller[]
   bulletins  Bulletin[]
+  polls      Poll[]
 
   @@map("player_games")
 }

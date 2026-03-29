@@ -50,6 +50,13 @@ interface SeedBulletin {
   body: string;
 }
 
+interface SeedPoll {
+  question: string;
+  createdByHandle: string;
+  options: string[];
+  votes: Array<{ handle: string; option: number }>;
+}
+
 interface SeedDataConfig {
   users: SeedUser[];
   messages: SeedMessage[];
@@ -57,6 +64,7 @@ interface SeedDataConfig {
   oneLiners: SeedOneLiner[];
   lastCallers: SeedLastCaller[];
   bulletins: SeedBulletin[];
+  polls?: SeedPoll[];
 }
 
 // ─── Timestamp helpers ──────────────────────────────────────────────────────
@@ -220,6 +228,50 @@ export async function seedPlayerContent(playerGameId: number): Promise<void> {
   }
 
   log.info({ playerGameId, count: config.bulletins.length }, 'Seeded bulletins');
+
+  // 6. Create polls scoped to this player's game
+  if (config.polls) {
+    for (const poll of config.polls) {
+      const creatorId = userMap.get(poll.createdByHandle);
+      if (!creatorId) continue;
+
+      const created = await db.poll.create({
+        data: {
+          playerGameId,
+          question: poll.question,
+          createdBy: creatorId,
+          active: true,
+        },
+      });
+
+      // Create options
+      const optionIds: number[] = [];
+      for (let i = 0; i < poll.options.length; i++) {
+        const opt = await db.pollOption.create({
+          data: {
+            pollId: created.id,
+            text: poll.options[i]!,
+            sortOrder: i,
+          },
+        });
+        optionIds.push(opt.id);
+      }
+
+      // Create votes
+      for (const vote of poll.votes) {
+        const voterId = userMap.get(vote.handle);
+        if (!voterId || vote.option >= optionIds.length) continue;
+        await db.pollVote.create({
+          data: {
+            pollId: created.id,
+            optionId: optionIds[vote.option]!,
+            userId: voterId,
+          },
+        });
+      }
+    }
+    log.info({ playerGameId, count: config.polls.length }, 'Seeded polls');
+  }
 
   log.info({ playerGameId }, 'Player BBS content seeding complete');
 }
