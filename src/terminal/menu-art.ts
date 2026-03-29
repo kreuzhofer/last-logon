@@ -2,7 +2,7 @@
 // These produce the classic BBS look without requiring hand-crafted .ans files
 
 import { Color, setColor, resetColor, BoxChars } from './ansi.js';
-import { center, padRight, padLeft } from '../utils/string-utils.js';
+import { center, padRight, padLeft, stripAnsi } from '../utils/string-utils.js';
 
 const D = BoxChars.double;
 const S = BoxChars.single;
@@ -221,7 +221,3 @@ export function generatePrompt(text: string): string {
   );
 }
 
-// Strip ANSI escape sequences to get visible length
-function stripAnsi(str: string): string {
-  return str.replace(/\x1b\[[0-9;]*m/g, '');
-}

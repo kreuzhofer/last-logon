@@ -11,6 +11,7 @@ import * as ansi from './ansi.js';
 import { Color } from './ansi.js';
 import { Terminal } from './terminal.js';
 import { parsePipeCodes } from '../utils/pipe-codes.js';
+import { stripAnsi } from '../utils/string-utils.js';
 
 const D = ansi.BoxChars.double;
 
@@ -267,7 +268,3 @@ export class ScreenFrame {
   }
 }
 
-/** Strip ANSI escape sequences for visible length calculation */
-function stripAnsi(str: string): string {
-  return str.replace(/\x1b\[[0-9;]*m/g, '');
-}

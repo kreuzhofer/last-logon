@@ -19,6 +19,16 @@ await initDatabase();
 // Seed message areas from config
 await seedMessageAreas();
 
+// Validate AI configuration if game is enabled
+if (config.game?.enabled !== false) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey || apiKey === 'sk-ant-api03-your-key-here') {
+    log.fatal('Game is enabled but ANTHROPIC_API_KEY is not configured. Set it in .env or disable the game (game.enabled: false in config/default.hjson).');
+    process.exit(1);
+  }
+  log.info({ model: config.game?.aiModel ?? 'claude-sonnet-4-20250514' }, 'AI configuration validated');
+}
+
 // Start SSH server
 const server = await startSSHServer((conn) => {
   handleSession(conn).catch((err) => {
@@ -34,6 +44,17 @@ if (config.game?.enabled !== false) {
 
 log.info(`${config.general.bbsName} is online!`);
 log.info(`SSH: ssh localhost -p ${config.servers.ssh.port}`);
+
+// Catch all uncaught errors through pino
+process.on('uncaughtException', (err) => {
+  log.fatal({ error: err }, 'Uncaught exception');
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  log.fatal({ error: reason }, 'Unhandled rejection');
+  process.exit(1);
+});
 
 // Graceful shutdown
 async function shutdown() {

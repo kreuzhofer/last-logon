@@ -53,6 +53,14 @@ export interface BBSConfig {
     file: string;
     console: boolean;
   };
+  game?: {
+    enabled: boolean;
+    aiModel: string;
+    maxAiCallsPerMinute: number;
+    killerResponseDelayMin: number;
+    killerResponseDelayMax: number;
+    inactivityReminderHours: number;
+  };
 }
 
 const DEFAULTS: BBSConfig = {

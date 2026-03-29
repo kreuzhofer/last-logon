@@ -1,5 +1,10 @@
 // String utilities for fixed-width terminal display
 
+/** Strip ANSI escape sequences for visible length calculation */
+export function stripAnsi(str: string): string {
+  return str.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
 export function padRight(text: string, width: number, char = ' '): string {
   if (text.length >= width) return text.substring(0, width);
   return text + char.repeat(width - text.length);

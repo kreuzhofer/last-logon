@@ -21,9 +21,23 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyPassword(hash: string, password: string): Promise<boolean> {
   try {
     return await argon2.verify(hash, password);
-  } catch {
+  } catch (err) {
+    log.warn({ error: err }, 'Password verification error (corrupt hash or argon2 failure)');
     return false;
   }
+}
+
+const HANDLE_REGEX = /^[a-zA-Z0-9_\-]{2,30}$/;
+const CONTROL_CHAR_REGEX = /[\x00-\x1f\x7f]/g;
+
+function validateHandle(handle: string): void {
+  if (!handle || !HANDLE_REGEX.test(handle)) {
+    throw new AuthError('Handle must be 2-30 characters: letters, numbers, underscore, or hyphen.');
+  }
+}
+
+function sanitizeTextField(value: string, maxLength: number): string {
+  return value.replace(CONTROL_CHAR_REGEX, '').substring(0, maxLength);
 }
 
 export async function registerUser(
@@ -37,6 +51,8 @@ export async function registerUser(
   },
 ): Promise<User> {
   const db = getDb();
+
+  validateHandle(handle);
 
   const existing = await db.user.findUnique({ where: { handle } });
   if (existing) {
@@ -56,9 +72,9 @@ export async function registerUser(
     data: {
       handle,
       passwordHash,
-      realName: options?.realName ?? null,
+      realName: options?.realName ? sanitizeTextField(options.realName, 50) : null,
       email: options?.email ?? null,
-      location: options?.location ?? '',
+      location: options?.location ? sanitizeTextField(options.location, 50) : '',
       accessLevel: options?.accessLevel ?? 20,
       firstLoginAt: new Date(),
       lastLoginAt: new Date(),
@@ -76,6 +92,8 @@ export async function loginUser(
   nodeNumber: number,
 ): Promise<User> {
   const db = getDb();
+
+  validateHandle(handle);
 
   const user = await db.user.findUnique({ where: { handle } });
 

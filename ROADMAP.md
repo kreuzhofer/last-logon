@@ -10,10 +10,13 @@ The entire BBS **is** the game world. Every player has a persistent game state t
 
 Key pillars:
 - **Persistent per-player game state** — each login continues the story
-- **Progressive feature unlocking** — BBS features unlock as the story advances
-- **AI-driven killer persona** — Claude adapts mood, trust, suspicion per player
-- **Asynchronous gameplay** — killer responds over hours/days, not seconds
+- **Progressive feature unlocking** — BBS features unlock as the story advances; killer can also *revoke* access
+- **AI-driven killer persona** — Claude adapts mood, trust, suspicion per player; actively assesses player skill
+- **Asynchronous gameplay** — killer responds over hours/days, not seconds; pulls you back via notifications
+- **No two games alike** — AI personalizes the story per player; different clues, pacing, and interactions
+- **The killer wants to be caught** — narcissistic, craves recognition for genius; gives worthy opponents a chance
 - **Bilingual** — full English and German support
+- **Episodic** — designed for ongoing development; new puzzles/tools become available to active players mid-game
 - **Cost-efficient AI** — scripted first beats, rolling conversation window, structured tool_use
 
 ---
@@ -226,10 +229,13 @@ Key pillars:
   - Tool result type assertion for `respond_to_player`
   - Add hjson type declaration file
 
-- [ ] **Adaptive difficulty system** — Adjust puzzle difficulty and hint frequency based on player skill assessment
-  - Track solve speed, hint usage, attempt counts across puzzles
-  - Feed skill profile into killer AI prompt for adaptive responses
-  - Planned in original design, not implemented
+- [ ] **Adaptive difficulty system** — Killer assesses player skill and adjusts challenge accordingly
+  - Track solve speed, hint usage, attempt counts, response quality across puzzles
+  - Feed skill profile into killer AI prompt so the killer *actively gauges* the player
+  - Core to original vision: killer wants a worthy opponent, not a bored or frustrated one
+  - Killer should feel like it's testing you: "Let's see how clever you really are"
+  - If player is too good → harder puzzles, fewer hints, killer gets more guarded
+  - If player struggles → killer gets condescending but drops more breadcrumbs (ego demands an audience)
 
 - [ ] **Mini-games** within the BBS
   - Planned: Classic BBS door games (Tradewars-style, trivia) that the killer corrupts
@@ -246,21 +252,50 @@ Key pillars:
 - [ ] **Sound effects** via terminal bell (`\x07`) for jump scares
   - Killer messages, glitch effects, chapter transitions
 
+- [ ] **Feature revocation** — Killer can *remove* previously unlocked features as punishment or story device
+  - Player disobeys or ignores killer → access gets revoked
+  - Creates tension: progress is not guaranteed to be permanent
+  - Needs `revokeFeature()` in game-layer + UI handling for locked-again state
+
+- [ ] **Hints earned through tasks** — Players who are stuck must earn hints, not get them free
+  - Killer demands a favor (solve a side-puzzle, retrieve information, do something in the BBS)
+  - Only after completing the task does the killer reveal a hint
+  - Ties into killer's narcissistic personality: "You want my help? Prove you're worthy."
+  - Needs: task/favor system, hint gating in puzzle-engine
+
+- [ ] **ASCII mini-games with embedded clues** — Classic terminal games (Pac-Man, reaction games, simple platformers) where visual clues are hidden in gameplay
+  - Player must notice something unusual while playing (a symbol, a pattern, a name)
+  - Clue is only discoverable by actually playing the game, not just reading text
+  - Builds on door games framework — each mini-game is a door
+  - Start with 2-3 simple games, expand over time
+
 ### P3 — Future Episodes & Extensions
 
 - [ ] **Episode 2 content** — Continue the story after Chapter 5
   - New chapters, puzzles, NPCs
   - Deeper filesystem with more hidden areas
   - New killer personality evolution based on Episode 1 outcome
+  - Original vision: episodic releases — players get notified when new episode drops
+  - New puzzles/tools added to the system become available to active players mid-game
+
+- [ ] **Web search integration** — Killer "plants evidence" on real websites
+  - AI searches the web for real content that fits the narrative, references it as "planted" clues
+  - Player must leave the BBS and search Google/Wikipedia to find the referenced information
+  - Blurs the line between game and reality — core to the original vision
+  - No hosting of external sites needed; AI repurposes existing web content
+  - Needs: web search tool for AI engine, clue type for external references
 
 - [ ] **WebSocket transport** — Browser-based BBS access
   - Config exists (`servers.websocket`), needs implementation
   - Would enable web-based terminal emulator frontend
   - `IConnection` interface is already transport-agnostic
+  - Original vision: browser-based could enable richer notification integrations
 
-- [ ] **Telegram bridge** — Receive killer messages as Telegram notifications
-  - Pull players back into the game asynchronously
-  - Could send puzzle hints, story beats, killer taunts
+- [ ] **Messenger notifications** — Pull players back via their preferred messaging app
+  - Telegram, Signal, or other free-to-integrate messengers
+  - Killer sends taunts, reminders, time-pressure messages outside the BBS
+  - Extends the existing async scheduler concept beyond BBS-internal messages
+  - Original vision emphasized this as key to the "game that haunts you" feel
 
 - [ ] **Email bridge** — Email notifications for game events
   - "You have a new message on The Neon Underground"
@@ -275,10 +310,13 @@ Key pillars:
   - NPCs could be present in real-time
   - Ghost user could glitch through chat
 
-- [ ] **Multi-player story interactions** — Players affecting each other's stories
+- [ ] **Multi-player co-op mode** — Players affecting each other's stories
+  - Original vision: groups of 3-4 players collaborate to catch the killer
   - Killer references other players' actions
   - Shared evidence board
   - Cooperative puzzle solving
+  - Communication over the BBS is risky — killer can read messages between players
+  - Start with single-player (current), expand to co-op later
 
 - [ ] **Sysop dashboard** — Web UI for monitoring active games
   - View player progress, AI costs, story states

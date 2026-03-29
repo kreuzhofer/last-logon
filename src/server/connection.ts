@@ -2,6 +2,9 @@
 // Abstracts transport differences (SSH, WebSocket in the future)
 
 import { randomUUID } from 'node:crypto';
+import { createChildLogger } from '../core/logger.js';
+
+const log = createChildLogger('connection');
 
 export interface IConnection {
   readonly id: string;
@@ -86,8 +89,8 @@ export class SSHConnection implements IConnection {
     if (!this.closed) {
       try {
         (this.stream as NodeJS.WritableStream).write(data);
-      } catch {
-        // Stream may have closed
+      } catch (err) {
+        log.debug({ error: err, node: this.nodeNumber }, 'Write failed — stream may have closed');
       }
     }
   }
@@ -117,8 +120,8 @@ export class SSHConnection implements IConnection {
       releaseNodeNumber(this.nodeNumber);
       try {
         (this.stream as NodeJS.WritableStream).end();
-      } catch {
-        // Already closed
+      } catch (err) {
+        log.debug({ error: err, node: this.nodeNumber }, 'Stream end failed — already closed');
       }
       for (const cb of this.closeCallbacks) cb();
     }

@@ -3,9 +3,13 @@
 
 import { vi } from 'vitest';
 
-// Mock the database module to use an in-memory SQLite
-// This prevents tests from affecting the real database
-process.env.DATABASE_URL = 'file:../data/test-bbs.sqlite3';
+// Set test database path (absolute to avoid Prisma resolution issues)
+import path from 'node:path';
+import url from 'node:url';
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const testDbPath = path.resolve(__dirname, '..', 'data', 'test-bbs.sqlite3');
+process.env.DATABASE_URL = `file:${testDbPath}`;
 
 // Mock config with test-friendly values
 vi.mock('../src/core/config.js', () => ({

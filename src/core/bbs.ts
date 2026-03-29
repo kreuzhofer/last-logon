@@ -77,7 +77,9 @@ export async function handleSession(conn: SSHConnection): Promise<void> {
 
   conn.onClose(() => {
     if (session.authenticated && session.user) {
-      auth.logoutUser(session.user.id, session.nodeNumber);
+      auth.logoutUser(session.user.id, session.nodeNumber).catch((err) => {
+        log.warn({ error: err, node: session.nodeNumber }, 'Failed to logout user on connection close');
+      });
     }
     log.info({ node: session.nodeNumber }, 'Session ended');
   });
@@ -127,7 +129,7 @@ export async function handleSession(conn: SSHConnection): Promise<void> {
     }
   } finally {
     if (session.authenticated && session.user) {
-      auth.logoutUser(session.user.id, session.nodeNumber);
+      await auth.logoutUser(session.user.id, session.nodeNumber);
     }
   }
 }
@@ -225,7 +227,9 @@ async function handleLogin(session: Session, frame: ScreenFrame): Promise<boolea
         frame.skipLine();
         frame.writeContentLine(c(Color.LightRed, `You have ${gameNotifs.length} notification(s) from Last Logon...`));
       }
-    } catch { /* game not initialized yet, ignore */ }
+    } catch (err) {
+      log.debug({ error: err }, 'Could not check game notifications');
+    }
 
     frame.skipLine();
 
@@ -278,7 +282,7 @@ async function handleNewUser(session: Session, frame: ScreenFrame): Promise<bool
   frame.setContentRow(frame.currentRow - frame.contentTop + 1);
   if (!handle) return false;
 
-  const existing = auth.getUserByHandle(handle);
+  const existing = await auth.getUserByHandle(handle);
   if (existing) {
     frame.writeContentLine(c(Color.LightRed, `Handle "${handle}" is already taken.`));
     promptRow(); await terminal.pause();
@@ -453,10 +457,10 @@ async function messageAreaModule(session: Session, frame: ScreenFrame): Promise<
     frame.skipLine();
 
     // Current area info
-    const area = messageService.getAreaByTag(currentAreaTag);
+    const area = await messageService.getAreaByTag(currentAreaTag);
     if (area) {
-      const count = messageService.getMessageCount(area.id);
-      const unread = session.user ? messageService.getUnreadCount(area.id, session.user.id) : 0;
+      const count = await messageService.getMessageCount(area.id);
+      const unread = session.user ? await messageService.getUnreadCount(area.id, session.user.id) : 0;
       frame.writeContentLine(
         c(Color.DarkGray, 'Current: ') +
         c(Color.LightCyan, area.name) +
@@ -503,7 +507,7 @@ async function changeArea(session: Session, frame: ScreenFrame): Promise<void> {
 
   frame.skipLine();
 
-  const conferences = messageService.getConferences();
+  const conferences = await messageService.getConferences();
   const areaList: messageService.MessageArea[] = [];
 
   for (const conf of conferences) {
@@ -512,12 +516,12 @@ async function changeArea(session: Session, frame: ScreenFrame): Promise<void> {
       frame.writeContentLine(c(Color.DarkGray, conf.description));
     }
 
-    const areas = messageService.getAreasForConference(conf.id);
+    const areas = await messageService.getAreasForConference(conf.id);
     for (const a of areas) {
       areaList.push(a);
       const num = areaList.length;
-      const count = messageService.getMessageCount(a.id);
-      const unread = session.user ? messageService.getUnreadCount(a.id, session.user.id) : 0;
+      const count = await messageService.getMessageCount(a.id);
+      const unread = session.user ? await messageService.getUnreadCount(a.id, session.user.id) : 0;
       const marker = currentAreaTag === a.tag ? '>' : ' ';
       const unreadStr = unread > 0 ? c(Color.LightGreen, ` (${unread} new)`) : '';
 
@@ -547,10 +551,10 @@ async function changeArea(session: Session, frame: ScreenFrame): Promise<void> {
 async function readMessages(session: Session, frame: ScreenFrame): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
-  const area = messageService.getAreaByTag(currentAreaTag);
+  const area = await messageService.getAreaByTag(currentAreaTag);
   if (!area) return;
 
-  const messages = messageService.getMessages(area.id, 100);
+  const messages = await messageService.getMessages(area.id, 100);
   if (messages.length === 0) {
     frame.refresh([config.general.bbsName, 'Messages', 'Read'], HOTKEYS_PAUSE);
     frame.skipLine();
@@ -574,14 +578,14 @@ async function readMessages(session: Session, frame: ScreenFrame): Promise<void>
 
     // Message header
     frame.writeContentLine(
-      c(Color.LightCyan, 'From : ') + c(Color.White, msg.from_name) +
-      c(Color.DarkGray, '  To: ') + c(Color.White, msg.to_name),
+      c(Color.LightCyan, 'From : ') + c(Color.White, msg.fromName) +
+      c(Color.DarkGray, '  To: ') + c(Color.White, msg.toName),
     );
     frame.writeContentLine(
       c(Color.LightCyan, 'Subj : ') + c(Color.White, msg.subject),
     );
     frame.writeContentLine(
-      c(Color.LightCyan, 'Date : ') + c(Color.DarkGray, formatDateTime(msg.created_at)),
+      c(Color.LightCyan, 'Date : ') + c(Color.DarkGray, formatDateTime(msg.createdAt)),
     );
     frame.writeContentLine(c(Color.DarkCyan, '─'.repeat(frame.contentWidth)));
 
@@ -594,7 +598,7 @@ async function readMessages(session: Session, frame: ScreenFrame): Promise<void>
 
     // Mark as read
     if (session.user) {
-      messageService.markRead(session.user.id, area.id, msg.id);
+      await messageService.markRead(session.user.id, area.id, msg.id);
     }
 
     // Prompt at bottom of content
@@ -616,10 +620,10 @@ async function readMessages(session: Session, frame: ScreenFrame): Promise<void>
   }
 }
 
-async function postMessage(session: Session, frame: ScreenFrame, replyTo?: messageService.MessageRecord): Promise<void> {
+async function postMessage(session: Session, frame: ScreenFrame, replyTo?: messageService.Message): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
-  const area = messageService.getAreaByTag(currentAreaTag);
+  const area = await messageService.getAreaByTag(currentAreaTag);
   if (!area || !session.user) return;
 
   frame.refresh(
@@ -631,7 +635,7 @@ async function postMessage(session: Session, frame: ScreenFrame, replyTo?: messa
   frame.skipLine();
 
   // To
-  let toName = replyTo ? replyTo.from_name : 'All';
+  let toName = replyTo ? replyTo.fromName : 'All';
   terminal.moveTo(frame.currentRow, frame.contentLeft);
   terminal.write(c(Color.LightCyan, `To [${toName}]: `) + c(Color.White, ''));
   const toInput = await terminal.readLine({ maxLength: 30 });
@@ -702,7 +706,7 @@ async function postMessage(session: Session, frame: ScreenFrame, replyTo?: messa
   const save = await terminal.promptYesNo(c(Color.LightCyan, 'Save this message?'));
 
   if (save) {
-    messageService.postMessage(area.id, session.user.id, session.handle, subject, bodyLines.join('\n'), {
+    await messageService.postMessage(area.id, session.user.id, session.handle, subject, bodyLines.join('\n'), {
       toName,
       replyToId: replyTo?.id,
     });
@@ -726,11 +730,11 @@ async function scanMessages(session: Session, frame: ScreenFrame): Promise<void>
   frame.writeContentLine(c(Color.LightCyan, 'Scanning for new messages...'));
   frame.skipLine();
 
-  const areas = messageService.getAllAreas();
+  const areas = await messageService.getAllAreas();
   let totalNew = 0;
 
   for (const a of areas) {
-    const unread = messageService.getUnreadCount(a.id, session.user.id);
+    const unread = await messageService.getUnreadCount(a.id, session.user.id);
     if (unread > 0) {
       frame.writeContentLine(
         c(Color.LightCyan, padRight(a.name, 33)) +
@@ -1000,7 +1004,7 @@ async function handleGoodbye(session: Session, frame: ScreenFrame): Promise<void
   await new Promise((r) => setTimeout(r, 1500));
 
   if (session.authenticated && session.user) {
-    auth.logoutUser(session.user.id, session.nodeNumber);
+    await auth.logoutUser(session.user.id, session.nodeNumber);
     session.logout();
   }
 

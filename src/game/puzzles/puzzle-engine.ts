@@ -127,8 +127,9 @@ export function validateAnswer(
     }
 
     case 'numeric': {
-      const answers = (puzzleDef.answers ?? []).map(a => parseFloat(a));
       const playerNum = parseFloat(playerAnswer.trim());
+      if (isNaN(playerNum)) return { correct: false, partial: false };
+      const answers = (puzzleDef.answers ?? []).map(a => parseFloat(a)).filter(n => !isNaN(n));
       return { correct: answers.includes(playerNum), partial: false };
     }
 
