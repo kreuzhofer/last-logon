@@ -13,10 +13,29 @@ import { getDb } from './database.js';
 import { eventBus } from './events.js';
 import type { SSHConnection } from '../server/connection.js';
 import * as messageService from '../messages/message-service.js';
-import { padRight, center, formatDateTime, truncate, wordWrap, formatNumber } from '../utils/string-utils.js';
-import { lastLogonDoor } from '../game/index.js';
-import { onPlayerLogin as gameOnLogin, onPlayerLogout as gameOnLogout, getPendingNotifications } from '../game/game-layer.js';
-import { startGameScheduler } from '../game/scheduler.js';
+import { padRight, center, formatDate, formatDateTime, truncate, wordWrap, formatNumber } from '../utils/string-utils.js';
+import { terminalScreen, journalScreen, processAutoBeats, showChapterTransition } from '../game/index.js';
+import {
+  getPlayerGame,
+  createPlayerGame,
+  onPlayerLogin as gameOnLogin,
+  onPlayerLogout as gameOnLogout,
+  isFeatureUnlocked,
+  getPendingNotifications,
+  markNotificationsRead,
+  buildStoryContext,
+  getTriggeredBeats,
+  checkChapterProgression,
+  addGameEvent,
+  addStoryLogEntry,
+} from '../game/game-layer.js';
+import { processBeat } from '../game/screens.js';
+import { injectGhostOneLiners, checkAndSendNPCMessages } from '../game/message-bridge.js';
+import { connectionEffect, displayScriptedText, sleep } from '../game/narrative.js';
+import { runHiddenTerminal } from '../game/hidden-terminal.js';
+import { getChapter } from '../game/base-script-loader.js';
+import type { PlayerGame } from '@prisma/client';
+import type { ChapterTag } from '../game/game-types.js';
 
 const log = createChildLogger('bbs');
 
@@ -35,16 +54,36 @@ const HOTKEYS_MATRIX: HotkeyDef[] = [
   { key: 'Q', label: 'Quit' },
 ];
 
-const HOTKEYS_MAIN: HotkeyDef[] = [
-  { key: 'M', label: 'Msgs' },
-  { key: 'F', label: 'Files' },
-  { key: 'D', label: 'Doors' },
-  { key: 'W', label: 'Who' },
-  { key: 'U', label: 'User' },
-  { key: 'O', label: '1Liner' },
+// Dynamic menu items gated by game feature unlocking
+interface MenuItem { key: string; label: string; feature?: string; }
+
+const ALL_MENU_ITEMS: MenuItem[] = [
+  { key: 'E', label: 'Mail' },
+  { key: 'M', label: 'Messages', feature: 'messages' },
+  { key: 'O', label: 'One-Liners', feature: 'oneliners' },
+  { key: 'W', label: 'Who\'s Online', feature: 'whoIsOnline' },
+  { key: 'U', label: 'User Profile', feature: 'userProfile' },
+  { key: 'L', label: 'Last Callers', feature: 'lastCallers' },
+  { key: 'B', label: 'Bulletins', feature: 'bulletins' },
+  { key: 'T', label: 'Terminal', feature: 'terminal' },
+  { key: 'F', label: 'Files', feature: 'hiddenTerminal' },
+  { key: 'J', label: 'Journal' },
   { key: 'S', label: 'Stats' },
-  { key: 'G', label: 'Bye' },
+  { key: 'G', label: 'Goodbye' },
 ];
+
+function buildDynamicMenu(game: PlayerGame | null): { items: MenuItem[]; hotkeys: HotkeyDef[]; keys: string[] } {
+  const visible = ALL_MENU_ITEMS.filter(item => {
+    if (!item.feature) return true; // Always visible (Journal, Stats, Goodbye)
+    if (!game) return false; // No game state = only show always-visible items
+    return isFeatureUnlocked(game, item.feature);
+  });
+  return {
+    items: visible,
+    hotkeys: visible.map(i => ({ key: i.key, label: i.label })),
+    keys: visible.map(i => i.key),
+  };
+}
 
 const HOTKEYS_MESSAGES: HotkeyDef[] = [
   { key: 'R', label: 'Read' },
@@ -77,6 +116,9 @@ export async function handleSession(conn: SSHConnection): Promise<void> {
 
   conn.onClose(() => {
     if (session.authenticated && session.user) {
+      gameOnLogout(session.user.id).catch((err) => {
+        log.debug({ error: err, node: session.nodeNumber }, 'Failed to run game logout');
+      });
       auth.logoutUser(session.user.id, session.nodeNumber).catch((err) => {
         log.warn({ error: err, node: session.nodeNumber }, 'Failed to logout user on connection close');
       });
@@ -220,21 +262,54 @@ async function handleLogin(session: Session, frame: ScreenFrame): Promise<boolea
     frame.writeContentLine(c(Color.DarkGray, `Last login: ${user.lastLoginAt ? formatDateTime(user.lastLoginAt) : 'Never'}`));
     frame.writeContentLine(c(Color.DarkGray, `Call #${formatNumber(user.totalCalls)}`));
 
-    // Check for Last Logon game notifications
+    // Game integration on login
+    let game = await getPlayerGame(user.id);
+    if (!game) {
+      // Edge case: user exists but no game state (pre-migration). Auto-create.
+      game = await createPlayerGame(user.id, 'en');
+      await addGameEvent(game, 'game_start', 'Auto-created game on login', {}, 5);
+      await injectGhostOneLiners(game);
+    }
+
+    await gameOnLogin(user.id);
+
+    // Connection effect for returning players past prologue
+    if (game.chapter !== 'prologue' && game.totalSessions > 1) {
+      frame.skipLine();
+      await connectionEffect(terminal, frame, game.language);
+    }
+
+    // Display notifications
     try {
-      const gameNotifs = await getPendingNotifications(user.id);
-      if (gameNotifs.length > 0) {
+      const notifications = await getPendingNotifications(user.id);
+      if (notifications.length > 0) {
         frame.skipLine();
-        frame.writeContentLine(c(Color.LightRed, `You have ${gameNotifs.length} notification(s) from Last Logon...`));
+        frame.writeContentLine(c(Color.Yellow, '═══ Notifications ═══'));
+        for (const notif of notifications.slice(0, 5)) {
+          frame.writeContentLine(c(Color.DarkGray, '► ') + c(Color.LightGray, notif.content));
+        }
+        await markNotificationsRead(user.id);
       }
     } catch (err) {
       log.debug({ error: err }, 'Could not check game notifications');
     }
 
-    frame.skipLine();
+    // NPC message triggers and auto-beats
+    try {
+      const context = await buildStoryContext(game);
+      await checkAndSendNPCMessages(game, session.handle, context);
+      await processAutoBeats(game, session, frame);
+    } catch (err) {
+      log.debug({ error: err }, 'Could not process game login hooks');
+    }
 
+    frame.skipLine();
     terminal.moveTo(frame.currentRow, frame.contentLeft);
     await terminal.pause();
+
+    // New message scan (classic BBS login feature)
+    await newMessageScan(session, frame);
+
     return true;
   } catch (err) {
     session.loginAttempts++;
@@ -348,6 +423,41 @@ async function handleNewUser(session: Session, frame: ScreenFrame): Promise<bool
     frame.skipLine();
     frame.writeContentLine(c(Color.LightGreen, `Account created! Welcome, ${user.handle}!`));
     frame.skipLine();
+
+    // Language selection for the game
+    frame.writeContentLine(c(Color.LightCyan, 'Select your language / Wähle deine Sprache:'));
+    frame.skipLine();
+    frame.writeContentLine(
+      '  ' + c(Color.DarkCyan, '[') + c(Color.White, 'E') + c(Color.DarkCyan, '] ') + c(Color.LightGray, 'English'),
+    );
+    frame.writeContentLine(
+      '  ' + c(Color.DarkCyan, '[') + c(Color.White, 'D') + c(Color.DarkCyan, '] ') + c(Color.LightGray, 'Deutsch'),
+    );
+    frame.skipLine();
+    terminal.moveTo(frame.currentRow, frame.contentLeft);
+    terminal.write(c(Color.LightCyan, '> ') + c(Color.White, ''));
+    const langChoice = await terminal.readHotkey(['E', 'D']);
+    const language = langChoice === 'D' ? 'de' : 'en';
+
+    // Initialize game state
+    const game = await createPlayerGame(user.id, language);
+    await addGameEvent(game, 'game_start', `New game started, language: ${language}`, { language }, 10);
+    await addStoryLogEntry(game, 'login', 'Game initialized');
+    await injectGhostOneLiners(game);
+
+    // Show prologue
+    frame.refresh([config.general.bbsName], [{ key: 'Q', label: 'Continue' }]);
+    frame.skipLine();
+    await connectionEffect(terminal, frame, language);
+
+    const prologue = getChapter('prologue');
+    const firstBeat = prologue?.beats.find(b => b.tag === 'first_login');
+    if (firstBeat?.scriptedText) {
+      await sleep(500);
+      displayScriptedText(frame, firstBeat.scriptedText, language, firstBeat.scriptedTextDe);
+    }
+
+    frame.skipLine();
     terminal.moveTo(frame.currentRow, frame.contentLeft);
     await terminal.pause();
     return true;
@@ -368,31 +478,40 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
   const config = getConfig();
 
   while (session.authenticated) {
-    frame.refresh([config.general.bbsName, 'Main Menu'], HOTKEYS_MAIN);
+    // Load current game state for dynamic menu
+    let game = await getPlayerGame(session.user!.id);
+    const menu = buildDynamicMenu(game);
+
+    frame.refresh([config.general.bbsName, 'Main Menu'], menu.hotkeys);
 
     frame.skipLine();
     frame.writeContentLine(c(Color.LightCyan, center('M A I N   M E N U', frame.contentWidth)));
     frame.skipLine();
 
-    // Two-column menu
-    const items: [string, string, string, string][] = [
-      ['M', 'Message Areas', 'U', 'User Profile'],
-      ['F', 'File Areas', 'W', 'Who\'s Online'],
-      ['D', 'Last Logon', 'L', 'Last Callers'],
-      ['C', 'Chat/Conference', 'O', 'One-Liners'],
-      ['B', 'Bulletins', 'V', 'Voting Booth'],
-      ['S', 'System Stats', 'G', 'Goodbye/Logoff'],
-    ];
-
-    for (const [k1, l1, k2, l2] of items) {
+    // Two-column dynamic menu layout
+    const displayItems = menu.items.filter(i => i.key !== 'G'); // Goodbye rendered separately
+    for (let i = 0; i < displayItems.length; i += 2) {
+      const item1 = displayItems[i]!;
       const col1 =
-        c(Color.DarkCyan, '[') + c(Color.White, k1) + c(Color.DarkCyan, '] ') +
-        c(Color.LightGray, padRight(l1, 20));
-      const col2 =
-        c(Color.DarkCyan, '[') + c(Color.White, k2) + c(Color.DarkCyan, '] ') +
-        c(Color.LightGray, padRight(l2, 20));
-      frame.writeContentLine('  ' + col1 + '     ' + col2);
+        c(Color.DarkCyan, '[') + c(Color.White, item1.key) + c(Color.DarkCyan, '] ') +
+        c(Color.LightGray, padRight(item1.label, 20));
+
+      const item2 = displayItems[i + 1];
+      if (item2) {
+        const col2 =
+          c(Color.DarkCyan, '[') + c(Color.White, item2.key) + c(Color.DarkCyan, '] ') +
+          c(Color.LightGray, padRight(item2.label, 20));
+        frame.writeContentLine('  ' + col1 + '     ' + col2);
+      } else {
+        frame.writeContentLine('  ' + col1);
+      }
     }
+
+    // Goodbye always last
+    frame.writeContentLine(
+      '  ' + c(Color.DarkCyan, '[') + c(Color.White, 'G') + c(Color.DarkCyan, '] ') +
+      c(Color.DarkGray, 'Goodbye/Logoff'),
+    );
 
     frame.skipLine();
 
@@ -409,22 +528,61 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
     terminal.moveTo(frame.currentRow, frame.contentLeft);
     terminal.write(c(Color.LightCyan, 'Command') + c(Color.DarkGray, ': ') + c(Color.White, ''));
 
-    const choice = await terminal.readHotkey([
-      'M', 'F', 'D', 'C', 'O', 'W', 'U', 'L', 'B', 'V', 'S', 'G',
-    ]);
+    const choice = await terminal.readHotkey(menu.keys);
 
+    // Dispatch to module
     switch (choice) {
+      case 'E': await mailModule(session, frame); break;
       case 'M': await messageAreaModule(session, frame); break;
+      case 'O': await oneLinersModule(session, frame); break;
       case 'W': await whoIsOnlineModule(session, frame); break;
       case 'U': await userProfileModule(session, frame); break;
       case 'L': await lastCallersModule(session, frame); break;
-      case 'O': await oneLinersModule(session, frame); break;
+      case 'B': await comingSoon(session, frame, 'Main Menu'); break;
+      case 'T': if (game) await terminalScreen(session, frame, game); break;
+      case 'F':
+        if (game) {
+          const ctx = await buildStoryContext(game);
+          await runHiddenTerminal(session, frame, game, ctx);
+        }
+        break;
+      case 'J': if (game) await journalScreen(session, frame, game); break;
       case 'S': await systemStatsModule(session, frame); break;
       case 'G': await handleGoodbye(session, frame); return;
-      case 'D': await lastLogonDoor(session, frame); break;
-      case 'F': case 'C': case 'B': case 'V':
-        await comingSoon(session, frame, 'Main Menu');
-        break;
+    }
+
+    // After each action, check game progression
+    if (game) {
+      try {
+        // Reload game state
+        const refreshed = await getPlayerGame(session.user!.id);
+        if (refreshed) game = refreshed;
+
+        // Fire area_visit beat triggers
+        const areaMap: Record<string, string> = {
+          'M': 'messages', 'O': 'oneliners', 'W': 'whoIsOnline',
+          'U': 'userProfile', 'L': 'lastCallers', 'B': 'bulletins',
+          'F': 'hiddenTerminal', 'S': 'systemStats',
+        };
+        const visitedArea = areaMap[choice];
+        if (visitedArea && game) {
+          const beats = getTriggeredBeats(game, { type: 'area_visit', value: visitedArea });
+          for (const beat of beats) {
+            await processBeat(beat, game, session, frame, await buildStoryContext(game));
+          }
+        }
+
+        // Check chapter progression
+        const advanced = await checkChapterProgression(game);
+        if (advanced) {
+          const updatedGame = await getPlayerGame(session.user!.id);
+          if (updatedGame) {
+            await showChapterTransition(session, frame, updatedGame);
+          }
+        }
+      } catch (err) {
+        log.warn({ error: err }, 'Game progression check failed');
+      }
     }
   }
 }
@@ -448,52 +606,244 @@ let currentAreaTag = 'local.general';
 async function messageAreaModule(session: Session, frame: ScreenFrame): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
+  let selectedIndex = 0;
+  let pageStart = 0;
 
   while (true) {
-    frame.refresh([config.general.bbsName, 'Main Menu', 'Messages'], HOTKEYS_MESSAGES);
-
-    frame.skipLine();
-    frame.writeContentLine(c(Color.LightCyan, center('M E S S A G E   A R E A S', frame.contentWidth)));
-    frame.skipLine();
-
-    // Current area info
     const area = await messageService.getAreaByTag(currentAreaTag);
-    if (area) {
-      const count = await messageService.getMessageCount(area.id);
-      const unread = session.user ? await messageService.getUnreadCount(area.id, session.user.id) : 0;
+    const areaName = area?.name ?? currentAreaTag;
+    const count = area ? await messageService.getMessageCount(area.id) : 0;
+    const unread = area && session.user ? await messageService.getUnreadCount(area.id, session.user.id) : 0;
+
+    const messages = area ? await messageService.getMessages(area.id, 500) : [];
+    const sorted = [...messages].reverse();
+    log.debug({ area: currentAreaTag, msgCount: sorted.length, pageStart, selectedIndex, listRows }, 'Message list render');
+    const lastReadId = (session.user && area)
+      ? (await getDb().messageRead.findUnique({
+          where: { userId_areaId: { userId: session.user.id, areaId: area.id } },
+        }))?.lastReadId ?? 0
+      : 0;
+
+    // Layout constants
+    const headerRows = 4; // area header + separator + column header + separator
+    const footerRows = 2; // separator + prompt
+    const listRows = 23 - headerRows - footerRows; // rows available for message list
+
+    // Ensure selection stays in bounds
+    if (selectedIndex >= sorted.length) selectedIndex = Math.max(0, sorted.length - 1);
+    if (selectedIndex < pageStart) pageStart = selectedIndex;
+    if (selectedIndex >= pageStart + listRows) pageStart = selectedIndex - listRows + 1;
+
+    frame.refresh([config.general.bbsName, 'Messages'], [
+      { key: '↑↓', label: 'Select' },
+      { key: 'Enter', label: 'Read' },
+      { key: 'P', label: 'Post' },
+      { key: 'C', label: 'Area' },
+      { key: 'Q', label: 'Back' },
+    ]);
+
+    // Area header
+    frame.writeContentLine(
+      c(Color.DarkBlue, ' Area: ') + c(Color.LightCyan, areaName) +
+      c(Color.DarkGray, ` (${count} msgs, `) + c(Color.LightGreen, `${unread} new`) + c(Color.DarkGray, ')'),
+    );
+    frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
+
+    if (sorted.length === 0) {
+      frame.skipLine();
+      frame.writeContentLine(c(Color.DarkGray, '  No messages in this area.'));
+      frame.skipLine();
+      terminal.moveTo(frame.currentRow, frame.contentLeft);
+      terminal.write(
+        c(Color.DarkGray, '[') + c(Color.Yellow, 'P') + c(Color.DarkGray, ']ost [') +
+        c(Color.Yellow, 'C') + c(Color.DarkGray, ']hg Area [') +
+        c(Color.Yellow, 'Q') + c(Color.DarkGray, ']uit: '),
+      );
+      const ch = await terminal.readHotkey(['P', 'C', 'Q']);
+      if (ch === 'P') { await postMessage(session, frame); continue; }
+      if (ch === 'C') { await changeArea(session, frame); selectedIndex = 0; pageStart = 0; continue; }
+      if (ch === 'Q') return;
+      continue;
+    }
+
+    // Column header
+    frame.writeContentLine(
+      c(Color.DarkBlue, padRight(' #', 5)) +
+      c(Color.DarkBlue, padRight('From', 16)) +
+      c(Color.DarkBlue, padRight('To', 16)) +
+      c(Color.DarkBlue, padRight('Subject', 25)) +
+      c(Color.DarkBlue, 'Date'),
+    );
+    frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
+
+    // Message list with lightbar
+    const listStartRow = frame.currentRow;
+    const pageEnd = Math.min(pageStart + listRows, sorted.length);
+
+    for (let i = pageStart; i < pageEnd; i++) {
+      const msg = sorted[i]!;
+      const isUnread = msg.id > lastReadId;
+      const isSelected = i === selectedIndex;
+      const marker = isUnread ? '*' : ' ';
+
+      if (isSelected) {
+        // Highlighted row — reverse video effect: cyan bg, black text
+        frame.writeContentLine(
+          setColor(Color.White, Color.DarkCyan) +
+          padRight(
+            `${marker}${padRight(String(i + 1), 4)}${padRight(truncate(msg.fromName, 15), 16)}${padRight(truncate(msg.toName, 15), 16)}${padRight(truncate(msg.subject, 24), 25)}${formatDate(msg.createdAt)}`,
+            frame.contentWidth,
+          ) + resetColor(),
+        );
+      } else {
+        frame.writeContentLine(
+          c(isUnread ? Color.LightGreen : Color.DarkGray, marker) +
+          c(Color.LightCyan, padRight(String(i + 1), 4)) +
+          c(Color.LightCyan, padRight(truncate(msg.fromName, 15), 16)) +
+          c(Color.LightGray, padRight(truncate(msg.toName, 15), 16)) +
+          c(Color.White, padRight(truncate(msg.subject, 24), 25)) +
+          c(Color.DarkGray, formatDate(msg.createdAt)),
+        );
+      }
+    }
+
+    // Page indicator
+    const totalPages = Math.ceil(sorted.length / listRows);
+    const currentPage = Math.floor(pageStart / listRows) + 1;
+    if (totalPages > 1) {
+      frame.skipLine();
       frame.writeContentLine(
-        c(Color.DarkGray, 'Current: ') +
-        c(Color.LightCyan, area.name) +
-        c(Color.DarkGray, ` (${count} msgs, ${unread} new)`),
+        c(Color.DarkGray, ` Page ${currentPage}/${totalPages}  (${sorted.length} messages)`),
       );
     }
 
-    frame.skipLine();
+    // Prompt
+    terminal.moveTo(frame.contentBottom, frame.contentLeft);
+    terminal.write(
+      c(Color.DarkGray, '↑↓') + c(Color.DarkGray, ' Select  ') +
+      c(Color.DarkGray, '[') + c(Color.Yellow, 'Enter') + c(Color.DarkGray, '] Read  ') +
+      c(Color.DarkGray, '[') + c(Color.Yellow, 'P') + c(Color.DarkGray, ']ost ') +
+      c(Color.DarkGray, '[') + c(Color.Yellow, 'C') + c(Color.DarkGray, ']hg ') +
+      c(Color.DarkGray, '[') + c(Color.Yellow, 'Q') + c(Color.DarkGray, ']uit'),
+    );
 
-    const menuItems = [
-      ['R', 'Read Messages'],
-      ['P', 'Post New Message'],
-      ['S', 'Scan New Messages'],
-      ['C', 'Change Area'],
-      ['Q', 'Return to Main Menu'],
-    ];
-    for (const [k, l] of menuItems) {
+    // Input loop
+    const key = await terminal.readHotkey(['UP', 'DOWN', 'PAGEUP', 'PAGEDOWN', 'ENTER', 'P', 'C', 'S', 'Q']);
+
+    switch (key) {
+      case 'UP':
+        if (selectedIndex > 0) selectedIndex--;
+        continue;
+      case 'DOWN':
+        if (selectedIndex < sorted.length - 1) selectedIndex++;
+        continue;
+      case 'PAGEUP':
+        selectedIndex = Math.max(0, selectedIndex - listRows);
+        continue;
+      case 'PAGEDOWN':
+        selectedIndex = Math.min(sorted.length - 1, selectedIndex + listRows);
+        continue;
+      case 'ENTER':
+        await readMessageAt(session, frame, sorted, selectedIndex, area!);
+        continue;
+      case 'P':
+        await postMessage(session, frame);
+        continue;
+      case 'C':
+        await changeArea(session, frame);
+        selectedIndex = 0;
+        pageStart = 0;
+        continue;
+      case 'S':
+        await scanMessages(session, frame);
+        continue;
+      case 'Q':
+        return;
+    }
+  }
+}
+
+// Read a single message and allow N/P navigation from there
+async function readMessageAt(
+  session: Session,
+  frame: ScreenFrame,
+  sorted: messageService.Message[],
+  startIndex: number,
+  area: messageService.MessageArea,
+): Promise<void> {
+  const terminal = session.terminal;
+  const config = getConfig();
+  let index = startIndex;
+  let maxReadId = 0;
+
+  while (index >= 0 && index < sorted.length) {
+    const msg = sorted[index]!;
+    if (msg.id > maxReadId) maxReadId = msg.id;
+    const w = frame.contentWidth;
+
+    frame.refresh(
+      [config.general.bbsName, 'Messages', area.name],
+      HOTKEYS_READER,
+    );
+
+    // Classic box-drawing message header
+    frame.writeContentLine(c(Color.DarkGray, '┌' + '─'.repeat(w - 2) + '┐'));
+    frame.writeContentLine(
+      c(Color.DarkGray, '│') +
+      c(Color.DarkBlue, ' From : ') + c(Color.LightCyan, padRight(truncate(msg.fromName, 26), 26)) +
+      c(Color.DarkBlue, ' Date: ') + c(Color.LightCyan, padRight(formatDateTime(msg.createdAt), 17)) +
+      c(Color.DarkGray, padRight('', w - 2 - 8 - 26 - 7 - 17) + '│'),
+    );
+    frame.writeContentLine(
+      c(Color.DarkGray, '│') +
+      c(Color.DarkBlue, '   To : ') + c(Color.LightCyan, padRight(truncate(msg.toName, 26), 26)) +
+      c(Color.DarkBlue, ' Msg#: ') + c(Color.LightCyan, padRight(`${index + 1} of ${sorted.length}`, 17)) +
+      c(Color.DarkGray, padRight('', w - 2 - 8 - 26 - 7 - 17) + '│'),
+    );
+    frame.writeContentLine(
+      c(Color.DarkGray, '│') +
+      c(Color.DarkBlue, ' Subj : ') + c(Color.LightCyan, padRight(truncate(msg.subject, w - 12), w - 12)) +
+      c(Color.DarkGray, ' │'),
+    );
+    frame.writeContentLine(c(Color.DarkGray, '├' + '─'.repeat(w - 2) + '┤'));
+
+    // Body
+    const bodyLines = wordWrap(msg.body, w - 3);
+    for (const line of bodyLines) {
+      if (frame.remainingRows <= 2) break;
+      const isQuote = line.startsWith('>');
       frame.writeContentLine(
-        '  ' + c(Color.DarkCyan, '[') + c(Color.White, k!) + c(Color.DarkCyan, '] ') +
-        c(Color.LightGray, l!),
+        c(Color.DarkGray, '│') + ' ' +
+        c(isQuote ? Color.DarkCyan : Color.LightGray, padRight(truncate(line, w - 4), w - 4)) +
+        c(Color.DarkGray, '│'),
       );
     }
 
-    frame.skipLine();
-    terminal.moveTo(frame.currentRow, frame.contentLeft);
-    terminal.write(c(Color.LightCyan, 'Command') + c(Color.DarkGray, ': ') + c(Color.White, ''));
-    const choice = await terminal.readHotkey(['R', 'P', 'S', 'C', 'Q']);
+    while (frame.remainingRows > 2) {
+      frame.writeContentLine(
+        c(Color.DarkGray, '│') + ' '.repeat(w - 2) + c(Color.DarkGray, '│'),
+      );
+    }
+    frame.writeContentLine(c(Color.DarkGray, '└' + '─'.repeat(w - 2) + '┘'));
 
+    // Mark read
+    if (session.user) {
+      await messageService.markRead(session.user.id, area.id, maxReadId);
+    }
+
+    terminal.moveTo(frame.contentBottom, frame.contentLeft);
+    terminal.write(
+      c(Color.DarkGray, '[') + c(Color.Yellow, 'N') + c(Color.DarkGray, ']ext ') +
+      c(Color.DarkGray, '[') + c(Color.Yellow, 'P') + c(Color.DarkGray, ']rev ') +
+      c(Color.DarkGray, '[') + c(Color.Yellow, 'R') + c(Color.DarkGray, ']eply ') +
+      c(Color.DarkGray, '[') + c(Color.Yellow, 'Q') + c(Color.DarkGray, ']uit '),
+    );
+
+    const choice = await terminal.readHotkey(['N', 'P', 'R', 'Q']);
     switch (choice) {
-      case 'R': await readMessages(session, frame); break;
-      case 'P': await postMessage(session, frame); break;
-      case 'S': await scanMessages(session, frame); break;
-      case 'C': await changeArea(session, frame); break;
+      case 'N': if (index < sorted.length - 1) index++; break;
+      case 'P': if (index > 0) index--; break;
+      case 'R': await postMessage(session, frame, sorted[index]); break;
       case 'Q': return;
     }
   }
@@ -505,16 +855,13 @@ async function changeArea(session: Session, frame: ScreenFrame): Promise<void> {
 
   frame.refresh([config.general.bbsName, 'Messages', 'Change Area'], HOTKEYS_PAUSE);
 
-  frame.skipLine();
-
   const conferences = await messageService.getConferences();
   const areaList: messageService.MessageArea[] = [];
 
   for (const conf of conferences) {
-    frame.writeContentLine(c(Color.Yellow, conf.name));
-    if (conf.description) {
-      frame.writeContentLine(c(Color.DarkGray, conf.description));
-    }
+    if (conf.tag === 'mail') continue; // Skip mail conference — it's accessed via [E] Mail
+    frame.writeContentLine(c(Color.Yellow, ` Conference: ${conf.name}`));
+    frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
 
     const areas = await messageService.getAreasForConference(conf.id);
     for (const a of areas) {
@@ -522,22 +869,22 @@ async function changeArea(session: Session, frame: ScreenFrame): Promise<void> {
       const num = areaList.length;
       const count = await messageService.getMessageCount(a.id);
       const unread = session.user ? await messageService.getUnreadCount(a.id, session.user.id) : 0;
-      const marker = currentAreaTag === a.tag ? '>' : ' ';
-      const unreadStr = unread > 0 ? c(Color.LightGreen, ` (${unread} new)`) : '';
+      const marker = currentAreaTag === a.tag ? c(Color.White, '>') : ' ';
+      const unreadStr = unread > 0 ? c(Color.LightGreen, padRight(`${unread} new`, 8)) : c(Color.DarkGray, padRight('', 8));
 
       frame.writeContentLine(
-        c(Color.DarkGray, ` ${marker} `) +
-        c(Color.White, padRight(`${num}`, 3)) +
-        c(Color.LightCyan, padRight(a.name, 28)) +
-        c(Color.DarkGray, `${count} msgs`) +
+        ` ${marker} ` +
+        c(Color.LightCyan, padRight(`${num}`, 4)) +
+        c(Color.LightCyan, padRight(a.name, 30)) +
+        c(Color.DarkGray, padRight(`${count} msgs`, 10)) +
         unreadStr,
       );
     }
-    frame.skipLine();
   }
 
+  frame.skipLine();
   terminal.moveTo(frame.currentRow, frame.contentLeft);
-  terminal.write(c(Color.LightCyan, 'Select area #') + c(Color.DarkGray, ': ') + c(Color.White, ''));
+  terminal.write(c(Color.Yellow, 'Select area #') + c(Color.DarkGray, ': ') + c(Color.White, ''));
   const input = await terminal.readLine({ maxLength: 3 });
 
   if (input) {
@@ -548,76 +895,25 @@ async function changeArea(session: Session, frame: ScreenFrame): Promise<void> {
   }
 }
 
+// Convenience wrapper for new message scan — reads from first message in current area
 async function readMessages(session: Session, frame: ScreenFrame): Promise<void> {
-  const terminal = session.terminal;
-  const config = getConfig();
   const area = await messageService.getAreaByTag(currentAreaTag);
   if (!area) return;
 
-  const messages = await messageService.getMessages(area.id, 100);
+  const messages = await messageService.getMessages(area.id, 500);
   if (messages.length === 0) {
+    const config = getConfig();
     frame.refresh([config.general.bbsName, 'Messages', 'Read'], HOTKEYS_PAUSE);
     frame.skipLine();
-    frame.writeContentLine(c(Color.Yellow, 'No messages in this area.'));
+    frame.writeContentLine(c(Color.DarkGray, '  No messages in this area.'));
     frame.skipLine();
-    terminal.moveTo(frame.currentRow, frame.contentLeft);
-    await terminal.pause();
+    session.terminal.moveTo(frame.currentRow, frame.contentLeft);
+    await session.terminal.pause();
     return;
   }
 
-  const reversed = [...messages].reverse();
-  let index = 0;
-
-  while (index < reversed.length) {
-    const msg = reversed[index]!;
-
-    frame.refresh(
-      [config.general.bbsName, 'Messages', area.name, `${index + 1}/${reversed.length}`],
-      HOTKEYS_READER,
-    );
-
-    // Message header
-    frame.writeContentLine(
-      c(Color.LightCyan, 'From : ') + c(Color.White, msg.fromName) +
-      c(Color.DarkGray, '  To: ') + c(Color.White, msg.toName),
-    );
-    frame.writeContentLine(
-      c(Color.LightCyan, 'Subj : ') + c(Color.White, msg.subject),
-    );
-    frame.writeContentLine(
-      c(Color.LightCyan, 'Date : ') + c(Color.DarkGray, formatDateTime(msg.createdAt)),
-    );
-    frame.writeContentLine(c(Color.DarkCyan, '─'.repeat(frame.contentWidth)));
-
-    // Body
-    const bodyLines = wordWrap(msg.body, frame.contentWidth - 1);
-    for (const line of bodyLines) {
-      if (frame.remainingRows <= 1) break;
-      frame.writeContentLine(c(Color.LightGray, line));
-    }
-
-    // Mark as read
-    if (session.user) {
-      await messageService.markRead(session.user.id, area.id, msg.id);
-    }
-
-    // Prompt at bottom of content
-    terminal.moveTo(frame.contentBottom, frame.contentLeft);
-    terminal.write(
-      c(Color.DarkGray, '[') + c(Color.White, 'N') + c(Color.DarkGray, ']ext ') +
-      c(Color.DarkGray, '[') + c(Color.White, 'P') + c(Color.DarkGray, ']rev ') +
-      c(Color.DarkGray, '[') + c(Color.White, 'R') + c(Color.DarkGray, ']eply ') +
-      c(Color.DarkGray, '[') + c(Color.White, 'Q') + c(Color.DarkGray, ']uit '),
-    );
-
-    const choice = await terminal.readHotkey(['N', 'P', 'R', 'Q']);
-    switch (choice) {
-      case 'N': if (index < reversed.length - 1) index++; break;
-      case 'P': if (index > 0) index--; break;
-      case 'R': await postMessage(session, frame, reversed[index]); break;
-      case 'Q': return;
-    }
-  }
+  const sorted = [...messages].reverse();
+  await readMessageAt(session, frame, sorted, 0, area);
 }
 
 async function postMessage(session: Session, frame: ScreenFrame, replyTo?: messageService.Message): Promise<void> {
@@ -754,6 +1050,245 @@ async function scanMessages(session: Session, frame: ScreenFrame): Promise<void>
   frame.skipLine();
   terminal.moveTo(frame.currentRow, frame.contentLeft);
   await terminal.pause();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Personal Mail
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function mailModule(session: Session, frame: ScreenFrame): Promise<void> {
+  const terminal = session.terminal;
+  const config = getConfig();
+  if (!session.user) return;
+
+  while (true) {
+    frame.refresh([config.general.bbsName, 'Mail'], [
+      { key: 'R', label: 'Read' },
+      { key: 'W', label: 'Write' },
+      { key: 'Q', label: 'Back' },
+    ]);
+
+    frame.writeContentLine(
+      c(Color.DarkBlue, ' Personal Mail for ') + c(Color.LightCyan, session.handle),
+    );
+    frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
+
+    const mail = await messageService.getMailForUser(session.handle, 50);
+
+    if (mail.length === 0) {
+      frame.skipLine();
+      frame.writeContentLine(c(Color.DarkGray, '  No mail messages.'));
+    } else {
+      // Classic columnar list
+      frame.writeContentLine(
+        c(Color.DarkBlue, padRight(' #', 5)) +
+        c(Color.DarkBlue, padRight('From', 18)) +
+        c(Color.DarkBlue, padRight('Subject', 35)) +
+        c(Color.DarkBlue, 'Date'),
+      );
+      frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
+
+      const mailAreaId = await messageService.getMailAreaId();
+      const lastReadId = mailAreaId
+        ? (await getDb().messageRead.findUnique({
+            where: { userId_areaId: { userId: session.user.id, areaId: mailAreaId } },
+          }))?.lastReadId ?? 0
+        : 0;
+
+      for (let i = 0; i < mail.length && frame.remainingRows > 3; i++) {
+        const msg = mail[i]!;
+        const isUnread = msg.id > lastReadId;
+        const marker = isUnread ? c(Color.LightGreen, '*') : ' ';
+        frame.writeContentLine(
+          marker +
+          c(Color.LightCyan, padRight(String(i + 1), 4)) +
+          c(Color.LightCyan, padRight(truncate(msg.fromName, 17), 18)) +
+          c(Color.White, padRight(truncate(msg.subject, 34), 35)) +
+          c(Color.DarkGray, formatDate(msg.createdAt)),
+        );
+      }
+    }
+
+    frame.skipLine();
+    terminal.moveTo(frame.currentRow, frame.contentLeft);
+    terminal.write(
+      c(Color.Yellow, 'Command') + c(Color.DarkGray, ' [') +
+      c(Color.White, 'R') + c(Color.DarkGray, ']ead [') +
+      c(Color.White, 'W') + c(Color.DarkGray, ']rite [') +
+      c(Color.White, 'Q') + c(Color.DarkGray, ']uit: ') + c(Color.White, ''),
+    );
+    const choice = await terminal.readHotkey(['R', 'W', 'Q']);
+
+    if (choice === 'Q') return;
+
+    if (choice === 'R' && mail.length > 0) {
+      // Read mail messages sequentially
+      let index = 0;
+      const mailAreaId = await messageService.getMailAreaId();
+
+      while (index < mail.length) {
+        const msg = mail[index]!;
+        const w = frame.contentWidth;
+
+        frame.refresh([config.general.bbsName, 'Mail', `${index + 1}/${mail.length}`], HOTKEYS_READER);
+
+        // Classic box-drawing header
+        frame.writeContentLine(c(Color.DarkGray, '┌' + '─'.repeat(w - 2) + '┐'));
+        frame.writeContentLine(
+          c(Color.DarkGray, '│') +
+          c(Color.DarkBlue, ' From : ') + c(Color.LightCyan, padRight(truncate(msg.fromName, 26), 26)) +
+          c(Color.DarkBlue, ' Date: ') + c(Color.LightCyan, padRight(formatDateTime(msg.createdAt), 17)) +
+          c(Color.DarkGray, padRight('', w - 2 - 8 - 26 - 7 - 17) + '│'),
+        );
+        frame.writeContentLine(
+          c(Color.DarkGray, '│') +
+          c(Color.DarkBlue, ' Subj : ') + c(Color.LightCyan, padRight(truncate(msg.subject, w - 12), w - 12)) +
+          c(Color.DarkGray, ' │'),
+        );
+        frame.writeContentLine(c(Color.DarkGray, '├' + '─'.repeat(w - 2) + '┤'));
+
+        const bodyLines = wordWrap(msg.body, w - 3);
+        for (const line of bodyLines) {
+          if (frame.remainingRows <= 2) break;
+          const isQuote = line.startsWith('>');
+          frame.writeContentLine(
+            c(Color.DarkGray, '│') + ' ' +
+            c(isQuote ? Color.DarkCyan : Color.LightGray, padRight(truncate(line, w - 4), w - 4)) +
+            c(Color.DarkGray, '│'),
+          );
+        }
+
+        while (frame.remainingRows > 2) {
+          frame.writeContentLine(
+            c(Color.DarkGray, '│') + ' '.repeat(w - 2) + c(Color.DarkGray, '│'),
+          );
+        }
+        frame.writeContentLine(c(Color.DarkGray, '└' + '─'.repeat(w - 2) + '┘'));
+
+        // Mark as read
+        if (mailAreaId) {
+          await messageService.markRead(session.user.id, mailAreaId, msg.id);
+        }
+
+        terminal.moveTo(frame.contentBottom, frame.contentLeft);
+        terminal.write(
+          c(Color.DarkGray, '[') + c(Color.Yellow, 'N') + c(Color.DarkGray, ']ext ') +
+          c(Color.DarkGray, '[') + c(Color.Yellow, 'P') + c(Color.DarkGray, ']rev ') +
+          c(Color.DarkGray, '[') + c(Color.Yellow, 'Q') + c(Color.DarkGray, ']uit '),
+        );
+
+        const nav = await terminal.readHotkey(['N', 'P', 'Q']);
+        if (nav === 'Q') break;
+        if (nav === 'N' && index < mail.length - 1) index++;
+        if (nav === 'P' && index > 0) index--;
+      }
+    }
+
+    if (choice === 'W') {
+      // Write new mail
+      frame.refresh([config.general.bbsName, 'Mail', 'Write'], [{ key: 'Enter', label: 'Send' }]);
+      frame.skipLine();
+
+      terminal.moveTo(frame.currentRow, frame.contentLeft);
+      terminal.write(c(Color.DarkBlue, 'To: ') + c(Color.White, ''));
+      const toName = await terminal.readLine({ maxLength: 30 });
+      frame.setContentRow(frame.currentRow - frame.contentTop + 1);
+      if (!toName) continue;
+
+      terminal.moveTo(frame.currentRow, frame.contentLeft);
+      terminal.write(c(Color.DarkBlue, 'Subject: ') + c(Color.White, ''));
+      const subject = await terminal.readLine({ maxLength: 60 });
+      frame.setContentRow(frame.currentRow - frame.contentTop + 1);
+      if (!subject) continue;
+
+      frame.skipLine();
+      frame.writeContentLine(c(Color.DarkGray, 'Enter message (two blank lines to finish):'));
+      frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
+
+      const bodyLines: string[] = [];
+      let emptyCount = 0;
+      while (frame.remainingRows > 2) {
+        terminal.moveTo(frame.currentRow, frame.contentLeft);
+        terminal.write(c(Color.White, ''));
+        const line = await terminal.readLine({ maxLength: frame.contentWidth - 1 });
+        frame.setContentRow(frame.currentRow - frame.contentTop + 1);
+        if (line === '') {
+          emptyCount++;
+          if (emptyCount >= 2) break;
+          bodyLines.push('');
+        } else {
+          emptyCount = 0;
+          bodyLines.push(line);
+        }
+      }
+
+      while (bodyLines.length > 0 && bodyLines[bodyLines.length - 1] === '') bodyLines.pop();
+
+      if (bodyLines.length > 0) {
+        const save = await terminal.promptYesNo(c(Color.Yellow, 'Send this mail?'));
+        if (save) {
+          await messageService.sendMail(session.user.id, session.handle, toName, subject, bodyLines.join('\n'));
+          terminal.write(c(Color.LightGreen, ' Mail sent!'));
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+    }
+  }
+}
+
+// ─── New Message Scan (classic BBS login feature) ───────────────────────────
+
+async function newMessageScan(session: Session, frame: ScreenFrame): Promise<void> {
+  if (!session.user) return;
+
+  try {
+    const terminal = session.terminal;
+    const config = getConfig();
+
+    const areas = await messageService.getAllAreas();
+    const unreadAreas: { name: string; count: number }[] = [];
+
+    for (const a of areas) {
+      // Skip game-internal and mail areas
+      if (a.tag.startsWith('lastlogon') || a.tag.startsWith('mail')) continue;
+      const unread = await messageService.getUnreadCount(a.id, session.user!.id);
+      if (unread > 0) {
+        unreadAreas.push({ name: a.name, count: unread });
+      }
+    }
+
+    const mailCount = await messageService.getUnreadMailCount(session.user.id, session.handle);
+
+    if (unreadAreas.length === 0 && mailCount === 0) return;
+
+    frame.refresh([config.general.bbsName, 'New Messages'], HOTKEYS_PAUSE);
+    frame.skipLine();
+    frame.writeContentLine(c(Color.Yellow, ' Scanning for new messages...'));
+    frame.skipLine();
+
+    if (mailCount > 0) {
+      frame.writeContentLine(
+        c(Color.LightRed, '  ► ') + c(Color.White, `You have ${mailCount} new mail!`),
+      );
+    }
+
+    for (const a of unreadAreas) {
+      frame.writeContentLine(
+        c(Color.LightCyan, '  ' + padRight(a.name, 35)) +
+        c(Color.LightGreen, `${a.count} new`),
+      );
+    }
+
+    const total = unreadAreas.reduce((s, a) => s + a.count, 0) + mailCount;
+    frame.skipLine();
+    frame.writeContentLine(c(Color.White, `  ${total} new message${total !== 1 ? 's' : ''} total.`));
+    frame.skipLine();
+
+    terminal.moveTo(frame.currentRow, frame.contentLeft);
+    await terminal.pause();
+  } catch (err) {
+    log.debug({ error: err }, 'New message scan failed');
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1004,6 +1539,7 @@ async function handleGoodbye(session: Session, frame: ScreenFrame): Promise<void
   await new Promise((r) => setTimeout(r, 1500));
 
   if (session.authenticated && session.user) {
+    await gameOnLogout(session.user.id).catch(() => {});
     await auth.logoutUser(session.user.id, session.nodeNumber);
     session.logout();
   }

@@ -14,15 +14,14 @@
       generator: "mainMenu"
       hotkeys: {
         M: { action: "module", target: "messageAreas" }
-        F: { action: "module", target: "fileAreas" }
-        D: { action: "module", target: "doorGames" }
-        C: { action: "module", target: "teleconference" }
         O: { action: "module", target: "oneLiners" }
         W: { action: "module", target: "whoIsOnline" }
         U: { action: "module", target: "userProfile" }
         L: { action: "module", target: "lastCallers" }
-        V: { action: "module", target: "votingBooth" }
         B: { action: "module", target: "bulletins" }
+        T: { action: "module", target: "terminal" }
+        F: { action: "module", target: "hiddenTerminal" }
+        J: { action: "module", target: "journal" }
         S: { action: "module", target: "stats" }
         G: { action: "module", target: "goodbye" }
       }

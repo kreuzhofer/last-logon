@@ -165,7 +165,7 @@
       titleDe: "Das Spiel beginnt"
       description: "The killer notices the player and makes direct contact."
       descriptionDe: "Der Mörder bemerkt den Spieler und nimmt direkten Kontakt auf."
-      features: ["messages", "oneliners", "whoIsOnline", "userProfile", "bulletins", "lastCallers", "doorGames", "hiddenTerminal"]
+      features: ["messages", "oneliners", "whoIsOnline", "userProfile", "bulletins", "lastCallers", "doorGames", "hiddenTerminal", "terminal"]
       beats: [
         {
           tag: "killer_first_contact"
@@ -218,7 +218,7 @@
 
             |12══════════════════════════════════════|08
           '''
-          unlocks: ["hiddenTerminal", "doorGames"]
+          unlocks: ["hiddenTerminal", "doorGames", "terminal"]
           killerMood: "playful"
           required: true
         }

@@ -71,15 +71,16 @@ describe('seedMessageAreas', () => {
     const conferences = await db.messageConference.findMany();
     const areas = await db.messageArea.findMany();
 
-    // config/message-areas.hjson defines 3 conferences: local, retro, tech
-    expect(conferences.length).toBe(3);
-    expect(conferences.map(c => c.tag).sort()).toEqual(['local', 'retro', 'tech']);
+    // config/message-areas.hjson defines 4 conferences: local, retro, tech, mail
+    expect(conferences.length).toBe(4);
+    expect(conferences.map(c => c.tag).sort()).toEqual(['local', 'mail', 'retro', 'tech']);
 
-    // local: 2 areas, retro: 3 areas, tech: 2 areas = 7 total
-    expect(areas.length).toBe(7);
+    // local: 2 areas, retro: 3 areas, tech: 2 areas, mail: 1 area = 8 total
+    expect(areas.length).toBe(8);
     expect(areas.map(a => a.tag).sort()).toEqual([
       'local.general',
       'local.sysop',
+      'mail.personal',
       'retro.bbs',
       'retro.hardware',
       'retro.software',
@@ -95,8 +96,8 @@ describe('seedMessageAreas', () => {
     const conferences = await db.messageConference.findMany();
     const areas = await db.messageArea.findMany();
 
-    expect(conferences.length).toBe(3);
-    expect(areas.length).toBe(7);
+    expect(conferences.length).toBe(4);
+    expect(areas.length).toBe(8);
   });
 });
 
@@ -115,11 +116,12 @@ describe('getConferences', () => {
   it('should return conferences ordered by sortOrder', async () => {
     const conferences = await getConferences();
 
-    expect(conferences.length).toBe(3);
-    // The config lists them as: local (0), retro (1), tech (2)
+    expect(conferences.length).toBe(4);
+    // The config lists them as: local (0), retro (1), tech (2), mail (3)
     expect(conferences[0].tag).toBe('local');
     expect(conferences[1].tag).toBe('retro');
     expect(conferences[2].tag).toBe('tech');
+    expect(conferences[3].tag).toBe('mail');
 
     // Verify sortOrder is ascending
     for (let i = 1; i < conferences.length; i++) {
@@ -162,7 +164,7 @@ describe('getAreasForConference', () => {
 describe('getAllAreas', () => {
   it('should return all areas', async () => {
     const areas = await getAllAreas();
-    expect(areas.length).toBe(7);
+    expect(areas.length).toBe(8);
   });
 
   it('should return areas ordered by tag ascending', async () => {

@@ -4,6 +4,7 @@ import { initDatabase, closeDatabase } from './core/database.js';
 import { startSSHServer } from './server/ssh-server.js';
 import { handleSession } from './core/bbs.js';
 import { seedMessageAreas } from './messages/message-service.js';
+import { seedBBSContent } from './game/content-seeder.js';
 import { startGameScheduler, stopGameScheduler } from './game/scheduler.js';
 
 // Load config first
@@ -18,6 +19,9 @@ await initDatabase();
 
 // Seed message areas from config
 await seedMessageAreas();
+
+// Seed BBS content (fake users, messages, one-liners, etc.)
+await seedBBSContent();
 
 // Validate AI configuration if game is enabled
 if (config.game?.enabled !== false) {

@@ -42,25 +42,25 @@ export class ScreenFrame {
   private cursorRow: number;
 
   constructor(private terminal: Terminal) {
-    // Ensure minimum viable dimensions
-    const w = Math.max(terminal.screenWidth, 80);
-    const h = Math.max(terminal.screenHeight, 25);
+    // Fixed 80x25 layout — classic BBS ANSI art requires exact dimensions
+    const w = 80;
+    const h = 25;
     // Accommodate the border: 1 char each side + 1 space padding
-    this.contentWidth = w - 4; // cols 3 to (width-2)
-    this.contentHeight = h - 2; // rows 2 to (height-1)
+    this.contentWidth = w - 4; // cols 3 to 78 = 76 chars wide
+    this.contentHeight = h - 2; // rows 2 to 24 = 23 rows tall
     this.contentBottom = h - 1;
     this.contentRight = w - 2;
     this.cursorRow = this.contentTop;
   }
 
-  /** Effective screen width (at least 80) */
+  /** Fixed screen width — 80 columns for ANSI art compatibility */
   private get screenW(): number {
-    return Math.max(this.terminal.screenWidth, 80);
+    return 80;
   }
 
-  /** Effective screen height (at least 25) */
+  /** Fixed screen height — 25 rows for ANSI art compatibility */
   private get screenH(): number {
-    return Math.max(this.terminal.screenHeight, 25);
+    return 25;
   }
 
   // --- Frame Drawing ---
@@ -122,7 +122,7 @@ export class ScreenFrame {
 
   /** Redraw just the bottom border row with current hotkeys */
   private drawBottomBorder(): void {
-    const w = this.terminal.screenWidth;
+    const w = this.screenW;
     const h = this.screenH;
     const t = this.terminal;
 

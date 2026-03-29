@@ -57,5 +57,17 @@
         }
       ]
     }
+    {
+      tag: "mail"
+      name: "Personal Mail"
+      description: "Private user-to-user messages"
+      areas: [
+        {
+          tag: "mail.personal"
+          name: "Personal Mail"
+          description: "Private messages between users"
+        }
+      ]
+    }
   ]
 }

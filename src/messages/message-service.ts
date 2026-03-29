@@ -156,9 +156,67 @@ export async function postMessage(
 export async function markRead(userId: number, areaId: number, messageId: number): Promise<void> {
   const db = getDb();
 
-  await db.messageRead.upsert({
+  // Only advance the read pointer, never go backwards
+  const existing = await db.messageRead.findUnique({
     where: { userId_areaId: { userId, areaId } },
-    create: { userId, areaId, lastReadId: messageId },
-    update: { lastReadId: messageId },
   });
+
+  if (!existing) {
+    await db.messageRead.create({ data: { userId, areaId, lastReadId: messageId } });
+  } else if (messageId > existing.lastReadId) {
+    await db.messageRead.update({
+      where: { userId_areaId: { userId, areaId } },
+      data: { lastReadId: messageId },
+    });
+  }
+}
+
+// ─── Personal Mail ──────────────────────────────────────────────────────────
+
+const MAIL_AREA_TAG = 'mail.personal';
+
+export async function getMailForUser(userHandle: string, limit = 50): Promise<Message[]> {
+  const db = getDb();
+  const area = await db.messageArea.findUnique({ where: { tag: MAIL_AREA_TAG } });
+  if (!area) return [];
+
+  return db.message.findMany({
+    where: { areaId: area.id, toName: userHandle },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+}
+
+export async function getUnreadMailCount(userId: number, userHandle: string): Promise<number> {
+  const db = getDb();
+  const area = await db.messageArea.findUnique({ where: { tag: MAIL_AREA_TAG } });
+  if (!area) return 0;
+
+  const readRecord = await db.messageRead.findUnique({
+    where: { userId_areaId: { userId, areaId: area.id } },
+  });
+  const lastReadId = readRecord?.lastReadId ?? 0;
+
+  return db.message.count({
+    where: { areaId: area.id, toName: userHandle, id: { gt: lastReadId } },
+  });
+}
+
+export async function sendMail(
+  fromUserId: number,
+  fromName: string,
+  toName: string,
+  subject: string,
+  body: string,
+): Promise<Message> {
+  const db = getDb();
+  const area = await db.messageArea.findUnique({ where: { tag: MAIL_AREA_TAG } });
+  if (!area) throw new Error('Mail area not found');
+
+  return postMessage(area.id, fromUserId, fromName, subject, body, { toName });
+}
+
+export async function getMailAreaId(): Promise<number | null> {
+  const area = await getDb().messageArea.findUnique({ where: { tag: MAIL_AREA_TAG } });
+  return area?.id ?? null;
 }
