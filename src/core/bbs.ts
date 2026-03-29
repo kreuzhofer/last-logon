@@ -162,6 +162,8 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   { key: 'U', label: 'User Profile', feature: 'userProfile' },
   { key: 'L', label: 'Last Callers', feature: 'lastCallers' },
   { key: 'B', label: 'Bulletins', feature: 'bulletins' },
+  { key: 'V', label: 'Voting', feature: 'bulletins' },
+  { key: 'D', label: 'Games', feature: 'doorGames' },
   { key: 'T', label: 'Terminal', feature: 'terminal' },
   { key: 'F', label: 'Files', feature: 'hiddenTerminal' },
   { key: 'J', label: 'Journal' },
@@ -671,7 +673,9 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
       case 'W': await whoIsOnlineModule(session, frame); break;
       case 'U': await userProfileModule(session, frame); break;
       case 'L': await lastCallersModule(game!.id, session, frame); break;
-      case 'B': await comingSoon(session, frame, 'Main Menu'); break;
+      case 'B': await bulletinsModule(game!.id, session, frame); break;
+      case 'V': await votingBoothModule(game!.id, session, frame); break;
+      case 'D': await comingSoon(session, frame, 'Main Menu'); break; // Games — will be wired to mini-games
       case 'T': if (game) await terminalScreen(session, frame, game); break;
       case 'F':
         if (game) {
@@ -1324,6 +1328,213 @@ async function writeMailScreen(pgId: number, session: Session, frame: ScreenFram
       await messageService.sendMail(pgId, session.user.id, session.handle, toName, subject, bodyLines.join('\n'));
       terminal.write(c(Color.LightGreen, ' Mail sent!'));
       await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
+}
+
+// ─── Bulletins ──────────────────────────────────────────────────────────────
+
+async function bulletinsModule(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
+  const terminal = session.terminal;
+  const config = getConfig();
+  const db = getDb();
+
+  const bulletins = await db.bulletin.findMany({
+    where: { playerGameId: pgId, active: true },
+    orderBy: { number: 'asc' },
+  });
+
+  if (bulletins.length === 0) {
+    frame.refresh([config.general.bbsName, 'Bulletins'], HOTKEYS_PAUSE);
+    frame.skipLine();
+    frame.writeContentLine(c(Color.DarkGray, '  No bulletins available.'));
+    frame.skipLine();
+    terminal.moveTo(frame.currentRow, frame.contentLeft);
+    await terminal.pause();
+    return;
+  }
+
+  // Build lightbar items
+  const items: LightbarItem[] = bulletins.map((b, i) => ({
+    text:
+      c(Color.LightCyan, padRight(`#${b.number}`, 5)) +
+      c(Color.White, padRight(truncate(b.title, 55), 55)) +
+      c(Color.DarkGray, formatDate(b.createdAt)),
+    plainText: `#${padRight(String(b.number), 4)}${padRight(truncate(b.title, 55), 55)}${formatDate(b.createdAt)}`,
+  }));
+
+  let selectedIndex = 0;
+
+  while (true) {
+    frame.refresh([config.general.bbsName, 'Bulletins'], [
+      { key: '↑↓', label: 'Select' },
+      { key: 'Enter', label: 'Read' },
+      { key: 'Q', label: 'Back' },
+    ]);
+
+    frame.writeContentLine(c(Color.Yellow, ' System Bulletins'));
+    frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
+
+    const listRows = frame.remainingRows - 3;
+    const result = await lightbarList(terminal, frame, items, selectedIndex, ['Q'], listRows);
+    selectedIndex = result.index;
+
+    if (result.action === 'Q') return;
+
+    if (result.action === 'ENTER' && selectedIndex < bulletins.length) {
+      // Read the selected bulletin
+      const bulletin = bulletins[selectedIndex]!;
+      const w = frame.contentWidth;
+
+      frame.refresh([config.general.bbsName, 'Bulletins', `#${bulletin.number}`], HOTKEYS_PAUSE);
+
+      frame.writeContentLine(c(Color.DarkGray, '┌' + '─'.repeat(w - 2) + '┐'));
+      frame.writeContentLine(
+        c(Color.DarkGray, '│') +
+        c(Color.Yellow, ` Bulletin #${bulletin.number}: `) +
+        c(Color.White, padRight(truncate(bulletin.title, w - 17), w - 17)) +
+        c(Color.DarkGray, '│'),
+      );
+      frame.writeContentLine(c(Color.DarkGray, '├' + '─'.repeat(w - 2) + '┤'));
+
+      // Render body with pipe codes
+      const bodyText = bulletin.body ?? '';
+      const { parsePipeCodes } = await import('../utils/pipe-codes.js');
+      const bodyLines = bodyText.split('\n');
+      for (const line of bodyLines) {
+        if (frame.remainingRows <= 2) break;
+        frame.writeContentLine(
+          c(Color.DarkGray, '│') + ' ' +
+          parsePipeCodes(padRight(truncate(line.trimEnd(), w - 4), w - 4)) +
+          c(Color.DarkGray, '│'),
+        );
+      }
+
+      while (frame.remainingRows > 2) {
+        frame.writeContentLine(c(Color.DarkGray, '│') + ' '.repeat(w - 2) + c(Color.DarkGray, '│'));
+      }
+      frame.writeContentLine(c(Color.DarkGray, '└' + '─'.repeat(w - 2) + '┘'));
+
+      terminal.moveTo(frame.contentBottom, frame.contentLeft);
+      await terminal.pause();
+    }
+  }
+}
+
+// ─── Voting Booth ───────────────────────────────────────────────────────────
+
+async function votingBoothModule(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
+  const terminal = session.terminal;
+  const config = getConfig();
+  const db = getDb();
+  if (!session.user) return;
+
+  const polls = await db.poll.findMany({
+    where: { playerGameId: pgId, active: true },
+    include: {
+      options: { orderBy: { sortOrder: 'asc' } },
+      votes: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (polls.length === 0) {
+    frame.refresh([config.general.bbsName, 'Voting Booth'], HOTKEYS_PAUSE);
+    frame.skipLine();
+    frame.writeContentLine(c(Color.DarkGray, '  No active polls.'));
+    frame.skipLine();
+    terminal.moveTo(frame.currentRow, frame.contentLeft);
+    await terminal.pause();
+    return;
+  }
+
+  // Build lightbar items
+  const items: LightbarItem[] = polls.map(p => {
+    const voteCount = p.votes.length;
+    const hasVoted = p.votes.some(v => v.userId === session.user!.id);
+    const marker = hasVoted ? c(Color.LightGreen, '✓') : ' ';
+    return {
+      text: marker + ' ' +
+        c(Color.White, padRight(truncate(p.question, 55), 55)) +
+        c(Color.DarkGray, `${voteCount} votes`),
+      plainText: `${hasVoted ? '✓' : ' '} ${padRight(truncate(p.question, 55), 55)}${voteCount} votes`,
+    };
+  });
+
+  let selectedIndex = 0;
+
+  while (true) {
+    frame.refresh([config.general.bbsName, 'Voting Booth'], [
+      { key: '↑↓', label: 'Select' },
+      { key: 'Enter', label: 'Vote' },
+      { key: 'Q', label: 'Back' },
+    ]);
+
+    frame.writeContentLine(c(Color.Yellow, ' Active Polls'));
+    frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
+
+    const listRows = frame.remainingRows - 3;
+    const result = await lightbarList(terminal, frame, items, selectedIndex, ['Q'], listRows);
+    selectedIndex = result.index;
+
+    if (result.action === 'Q') return;
+
+    if (result.action === 'ENTER' && selectedIndex < polls.length) {
+      const poll = polls[selectedIndex]!;
+      const hasVoted = poll.votes.some(v => v.userId === session.user!.id);
+
+      frame.refresh([config.general.bbsName, 'Voting Booth', 'Poll'], HOTKEYS_PAUSE);
+      frame.skipLine();
+      frame.writeContentLine(c(Color.White, ` ${poll.question}`));
+      frame.skipLine();
+
+      // Show options with vote counts
+      const totalVotes = poll.votes.length;
+      for (let i = 0; i < poll.options.length; i++) {
+        const opt = poll.options[i]!;
+        const optVotes = poll.votes.filter(v => v.optionId === opt.id).length;
+        const pct = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
+        const barLen = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 30) : 0;
+        const bar = '█'.repeat(barLen) + '░'.repeat(30 - barLen);
+
+        frame.writeContentLine(
+          '  ' + c(Color.DarkCyan, `[${i + 1}]`) + ' ' +
+          c(Color.LightGray, padRight(opt.text, 25)) +
+          c(Color.DarkCyan, bar) + ' ' +
+          c(Color.LightCyan, `${pct}%`) +
+          c(Color.DarkGray, ` (${optVotes})`),
+        );
+      }
+
+      frame.skipLine();
+
+      if (hasVoted) {
+        frame.writeContentLine(c(Color.DarkGray, '  You have already voted on this poll.'));
+        terminal.moveTo(frame.currentRow, frame.contentLeft);
+        await terminal.pause();
+      } else {
+        terminal.moveTo(frame.currentRow, frame.contentLeft);
+        terminal.write(c(Color.Yellow, '  Vote #') + c(Color.DarkGray, ' (or Q to skip): ') + c(Color.White, ''));
+        const input = await terminal.readLine({ maxLength: 2 });
+
+        if (input && input.toUpperCase() !== 'Q') {
+          const optNum = parseInt(input, 10);
+          if (optNum >= 1 && optNum <= poll.options.length) {
+            const option = poll.options[optNum - 1]!;
+            await db.pollVote.create({
+              data: {
+                pollId: poll.id,
+                optionId: option.id,
+                userId: session.user.id,
+              },
+            });
+            terminal.write(c(Color.LightGreen, ' Vote recorded!'));
+            await new Promise(r => setTimeout(r, 1000));
+            // Refresh poll data
+            return votingBoothModule(pgId, session, frame);
+          }
+        }
+      }
     }
   }
 }
