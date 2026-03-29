@@ -120,15 +120,7 @@ export async function loginUser(
     },
   });
 
-  // Record last caller
-  await db.lastCaller.create({
-    data: {
-      userId: user.id,
-      handle: user.handle,
-      location: user.location,
-      node: nodeNumber,
-    },
-  });
+  // Note: lastCaller record is created in bbs.ts where playerGameId is available
 
   // Upsert node
   await db.node.upsert({

@@ -11,6 +11,8 @@ const log = createChildLogger('messages');
 
 export type { MessageArea, MessageConference, Message };
 
+// ─── Area/Conference Seeding (global — structural, not per-user) ────────────
+
 export async function seedMessageAreas(): Promise<void> {
   const configPath = resolve(getProjectRoot(), 'config/message-areas.hjson');
   if (!existsSync(configPath)) return;
@@ -67,6 +69,8 @@ export async function seedMessageAreas(): Promise<void> {
   log.info('Message areas seeded from config');
 }
 
+// ─── Area/Conference Queries (global) ───────────────────────────────────────
+
 export async function getConferences(): Promise<MessageConference[]> {
   return getDb().messageConference.findMany({ orderBy: { sortOrder: 'asc' } });
 }
@@ -86,9 +90,11 @@ export async function getAreaByTag(tag: string): Promise<MessageArea | null> {
   return getDb().messageArea.findUnique({ where: { tag } });
 }
 
-export async function getMessages(areaId: number, limit = 50, offset = 0): Promise<Message[]> {
+// ─── Message Queries (per-player scoped) ────────────────────────────────────
+
+export async function getMessages(playerGameId: number, areaId: number, limit = 50, offset = 0): Promise<Message[]> {
   return getDb().message.findMany({
-    where: { areaId },
+    where: { playerGameId, areaId },
     orderBy: { createdAt: 'desc' },
     take: limit,
     skip: offset,
@@ -99,11 +105,11 @@ export async function getMessage(messageId: number): Promise<Message | null> {
   return getDb().message.findUnique({ where: { id: messageId } });
 }
 
-export async function getMessageCount(areaId: number): Promise<number> {
-  return getDb().message.count({ where: { areaId } });
+export async function getMessageCount(playerGameId: number, areaId: number): Promise<number> {
+  return getDb().message.count({ where: { playerGameId, areaId } });
 }
 
-export async function getUnreadCount(areaId: number, userId: number): Promise<number> {
+export async function getUnreadCount(playerGameId: number, areaId: number, userId: number): Promise<number> {
   const db = getDb();
 
   const readRecord = await db.messageRead.findUnique({
@@ -113,11 +119,12 @@ export async function getUnreadCount(areaId: number, userId: number): Promise<nu
   const lastReadId = readRecord?.lastReadId ?? 0;
 
   return db.message.count({
-    where: { areaId, id: { gt: lastReadId } },
+    where: { playerGameId, areaId, id: { gt: lastReadId } },
   });
 }
 
 export async function postMessage(
+  playerGameId: number,
   areaId: number,
   fromUserId: number,
   fromName: string,
@@ -129,6 +136,7 @@ export async function postMessage(
 
   const message = await db.message.create({
     data: {
+      playerGameId,
       areaId,
       fromUserId,
       fromName,
@@ -171,23 +179,23 @@ export async function markRead(userId: number, areaId: number, messageId: number
   }
 }
 
-// ─── Personal Mail ──────────────────────────────────────────────────────────
+// ─── Personal Mail (per-player scoped) ──────────────────────────────────────
 
 const MAIL_AREA_TAG = 'mail.personal';
 
-export async function getMailForUser(userHandle: string, limit = 50): Promise<Message[]> {
+export async function getMailForUser(playerGameId: number, userHandle: string, limit = 50): Promise<Message[]> {
   const db = getDb();
   const area = await db.messageArea.findUnique({ where: { tag: MAIL_AREA_TAG } });
   if (!area) return [];
 
   return db.message.findMany({
-    where: { areaId: area.id, toName: userHandle },
+    where: { playerGameId, areaId: area.id, toName: userHandle },
     orderBy: { createdAt: 'desc' },
     take: limit,
   });
 }
 
-export async function getUnreadMailCount(userId: number, userHandle: string): Promise<number> {
+export async function getUnreadMailCount(playerGameId: number, userId: number, userHandle: string): Promise<number> {
   const db = getDb();
   const area = await db.messageArea.findUnique({ where: { tag: MAIL_AREA_TAG } });
   if (!area) return 0;
@@ -198,11 +206,12 @@ export async function getUnreadMailCount(userId: number, userHandle: string): Pr
   const lastReadId = readRecord?.lastReadId ?? 0;
 
   return db.message.count({
-    where: { areaId: area.id, toName: userHandle, id: { gt: lastReadId } },
+    where: { playerGameId, areaId: area.id, toName: userHandle, id: { gt: lastReadId } },
   });
 }
 
 export async function sendMail(
+  playerGameId: number,
   fromUserId: number,
   fromName: string,
   toName: string,
@@ -213,7 +222,7 @@ export async function sendMail(
   const area = await db.messageArea.findUnique({ where: { tag: MAIL_AREA_TAG } });
   if (!area) throw new Error('Mail area not found');
 
-  return postMessage(area.id, fromUserId, fromName, subject, body, { toName });
+  return postMessage(playerGameId, area.id, fromUserId, fromName, subject, body, { toName });
 }
 
 export async function getMailAreaId(): Promise<number | null> {

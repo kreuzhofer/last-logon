@@ -1,6 +1,6 @@
-// Content Seeder — populates the BBS with fake users, messages, one-liners,
-// last callers, and bulletins to make the board feel alive from day one.
-// All seed users have accessLevel: 0 (locked) so they can never log in.
+// Content Seeder — populates a player's BBS world with fake community history
+// Called when a new PlayerGame is created (during registration).
+// Each player gets their own independent set of messages, one-liners, callers, bulletins.
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -61,19 +61,13 @@ interface SeedDataConfig {
 
 // ─── Timestamp helpers ──────────────────────────────────────────────────────
 
-/**
- * Generate a backdated timestamp with nighttime bias.
- * 70% of the time, the hour is between 21:00 and 03:00.
- */
 function backdatedTimestamp(daysAgo: number): Date {
   const baseMs = Date.now() - daysAgo * 24 * 60 * 60 * 1000;
   let hour: number;
   if (Math.random() < 0.7) {
-    // Nighttime: 21-23 or 0-3
     const nightHours = [21, 22, 23, 0, 1, 2, 3];
     hour = nightHours[Math.floor(Math.random() * nightHours.length)]!;
   } else {
-    // Daytime: 8-20
     hour = 8 + Math.floor(Math.random() * 13);
   }
   const minutes = Math.floor(Math.random() * 60);
@@ -82,67 +76,62 @@ function backdatedTimestamp(daysAgo: number): Date {
   return date;
 }
 
-// ─── Main seeder function ───────────────────────────────────────────────────
+// ─── Cache for seed data config ─────────────────────────────────────────────
 
-export async function seedBBSContent(): Promise<void> {
-  const db = getDb();
+let cachedConfig: SeedDataConfig | undefined;
 
-  // Idempotency check: if AXIOM user exists, content has already been seeded
-  const existingAxiom = await db.user.findUnique({ where: { handle: 'AXIOM' } });
-  if (existingAxiom) {
-    log.info('Seed content already exists, skipping');
-    return;
-  }
-
-  // Load seed data config
+function getSeedData(): SeedDataConfig {
+  if (cachedConfig) return cachedConfig;
   const configPath = resolve(getProjectRoot(), 'config/last-logon/seed-data.hjson');
   const raw = readFileSync(configPath, 'utf-8');
-  const config = hjson.parse(raw) as SeedDataConfig;
+  cachedConfig = hjson.parse(raw) as SeedDataConfig;
+  return cachedConfig;
+}
 
-  log.info('Seeding BBS content...');
+// ─── Per-player seeding ─────────────────────────────────────────────────────
 
-  // ── 1. Create fake users ────────────────────────────────────────────────
+/**
+ * Seed a player's BBS world with fake community content.
+ * Called once when a new PlayerGame is created during registration.
+ * Creates NPC users (if not already existing), then scopes all content
+ * to this player's game via playerGameId.
+ */
+export async function seedPlayerContent(playerGameId: number): Promise<void> {
+  const db = getDb();
+  const config = getSeedData();
 
-  const userMap = new Map<string, number>(); // handle -> userId
-
+  // 1. Ensure NPC users exist (shared across all games, accessLevel: 0)
+  const userMap = new Map<string, number>();
   for (const u of config.users) {
-    const user = await db.user.create({
-      data: {
-        handle: u.handle,
-        passwordHash: '$argon2id$placeholder',
-        accessLevel: 0,
-        location: u.location,
-        createdAt: new Date(u.createdAt),
-        lastLoginAt: u.lastLoginAt ? new Date(u.lastLoginAt) : null,
-        totalCalls: Math.floor(Math.random() * 200) + 10,
-        totalPosts: 0, // will be updated after messages are created
-      },
-    });
+    let user = await db.user.findUnique({ where: { handle: u.handle } });
+    if (!user) {
+      user = await db.user.create({
+        data: {
+          handle: u.handle,
+          passwordHash: '$argon2id$placeholder',
+          accessLevel: 0,
+          location: u.location,
+          createdAt: new Date(u.createdAt),
+          lastLoginAt: u.lastLoginAt ? new Date(u.lastLoginAt) : null,
+          totalCalls: Math.floor(Math.random() * 200) + 10,
+          totalPosts: 0,
+        },
+      });
+    }
     userMap.set(u.handle, user.id);
-    log.info({ handle: u.handle, id: user.id }, 'Created seed user');
   }
 
-  // ── 2. Create messages ──────────────────────────────────────────────────
-
-  // Combine messages and messagesExtra
+  // 2. Create messages scoped to this player's game
   const allMessages = [...config.messages, ...(config.messagesExtra ?? [])];
-
-  // Cache area lookups
-  const areaCache = new Map<string, number>(); // tag -> areaId
-
-  // Track created messages for reply linking: subject -> messageId
+  const areaCache = new Map<string, number>();
   const messageSubjectMap = new Map<string, number>();
 
-  // Track post counts per user
-  const postCounts = new Map<string, number>();
-
   for (const msg of allMessages) {
-    // Look up area
     let areaId = areaCache.get(msg.areaTag);
     if (areaId === undefined) {
       const area = await db.messageArea.findUnique({ where: { tag: msg.areaTag } });
       if (!area) {
-        log.warn({ areaTag: msg.areaTag }, 'Message area not found, skipping message');
+        log.warn({ areaTag: msg.areaTag }, 'Message area not found, skipping');
         continue;
       }
       areaId = area.id;
@@ -150,18 +139,15 @@ export async function seedBBSContent(): Promise<void> {
     }
 
     const userId = userMap.get(msg.fromHandle);
-
-    // Look up reply parent
     let replyToId: number | null = null;
     if (msg.replyToSubject) {
       const parentKey = `${msg.areaTag}:${msg.replyToSubject}`;
       replyToId = messageSubjectMap.get(parentKey) ?? null;
     }
 
-    const createdAt = backdatedTimestamp(msg.daysAgo);
-
     const message = await db.message.create({
       data: {
+        playerGameId,
         areaId,
         fromUserId: userId ?? null,
         fromName: msg.fromHandle,
@@ -169,47 +155,28 @@ export async function seedBBSContent(): Promise<void> {
         subject: msg.subject,
         body: msg.body.trim(),
         replyToId,
-        createdAt,
+        createdAt: backdatedTimestamp(msg.daysAgo),
         origin: 'seed',
       },
     });
 
-    // Track for reply linking — use the root subject for the area
     const subjectKey = `${msg.areaTag}:${msg.subject.replace(/^Re: /, '')}`;
     if (!messageSubjectMap.has(subjectKey)) {
       messageSubjectMap.set(subjectKey, message.id);
     }
-    // Also track exact subject in case replies reference the full subject
     messageSubjectMap.set(`${msg.areaTag}:${msg.subject}`, message.id);
-
-    // Count posts
-    postCounts.set(msg.fromHandle, (postCounts.get(msg.fromHandle) ?? 0) + 1);
   }
 
-  // Update user post counts
-  for (const [handle, count] of postCounts) {
-    const userId = userMap.get(handle);
-    if (userId) {
-      await db.user.update({
-        where: { id: userId },
-        data: { totalPosts: count },
-      });
-    }
-  }
+  log.info({ playerGameId, count: allMessages.length }, 'Seeded messages');
 
-  log.info({ count: allMessages.length }, 'Seeded messages');
-
-  // ── 3. Create one-liners ────────────────────────────────────────────────
-
+  // 3. Create one-liners scoped to this player's game
   for (const liner of config.oneLiners) {
     const userId = userMap.get(liner.handle);
-    if (!userId) {
-      log.warn({ handle: liner.handle }, 'User not found for one-liner, skipping');
-      continue;
-    }
+    if (!userId) continue;
 
     await db.oneliner.create({
       data: {
+        playerGameId,
         userId,
         handle: liner.handle,
         text: liner.text,
@@ -218,19 +185,16 @@ export async function seedBBSContent(): Promise<void> {
     });
   }
 
-  log.info({ count: config.oneLiners.length }, 'Seeded one-liners');
+  log.info({ playerGameId, count: config.oneLiners.length }, 'Seeded one-liners');
 
-  // ── 4. Create last callers ──────────────────────────────────────────────
-
+  // 4. Create last callers scoped to this player's game
   for (const caller of config.lastCallers) {
     const userId = userMap.get(caller.handle);
-    if (!userId) {
-      log.warn({ handle: caller.handle }, 'User not found for last caller, skipping');
-      continue;
-    }
+    if (!userId) continue;
 
     await db.lastCaller.create({
       data: {
+        playerGameId,
         userId,
         handle: caller.handle,
         location: caller.location || null,
@@ -240,13 +204,13 @@ export async function seedBBSContent(): Promise<void> {
     });
   }
 
-  log.info({ count: config.lastCallers.length }, 'Seeded last callers');
+  log.info({ playerGameId, count: config.lastCallers.length }, 'Seeded last callers');
 
-  // ── 5. Create bulletins ─────────────────────────────────────────────────
-
+  // 5. Create bulletins scoped to this player's game
   for (const bulletin of config.bulletins) {
     await db.bulletin.create({
       data: {
+        playerGameId,
         number: bulletin.number,
         title: bulletin.title,
         body: bulletin.body.trim(),
@@ -255,7 +219,7 @@ export async function seedBBSContent(): Promise<void> {
     });
   }
 
-  log.info({ count: config.bulletins.length }, 'Seeded bulletins');
+  log.info({ playerGameId, count: config.bulletins.length }, 'Seeded bulletins');
 
-  log.info('BBS content seeding complete');
+  log.info({ playerGameId }, 'Player BBS content seeding complete');
 }

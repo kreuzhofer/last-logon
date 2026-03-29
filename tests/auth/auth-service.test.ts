@@ -224,13 +224,13 @@ describe('loginUser', () => {
     expect(user2.totalCalls).toBe(2);
   });
 
-  it('should create a lastCaller record', async () => {
+  it('should not create a lastCaller record (moved to BBS layer for per-player scoping)', async () => {
     await registerUser('CallerTest', 'password123');
     await loginUser('CallerTest', 'password123', '10.0.0.1', 2);
 
+    // lastCaller creation moved to bbs.ts where playerGameId is available
     const callers = await db.lastCaller.findMany({ where: { handle: 'CallerTest' } });
-    expect(callers.length).toBe(1);
-    expect(callers[0].node).toBe(2);
+    expect(callers.length).toBe(0);
   });
 
   it('should upsert a node record', async () => {

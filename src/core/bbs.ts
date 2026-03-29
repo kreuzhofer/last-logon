@@ -31,6 +31,7 @@ import {
 } from '../game/game-layer.js';
 import { processBeat } from '../game/screens.js';
 import { injectGhostOneLiners, checkAndSendNPCMessages } from '../game/message-bridge.js';
+import { seedPlayerContent } from '../game/content-seeder.js';
 import { connectionEffect, displayScriptedText, sleep } from '../game/narrative.js';
 import { runHiddenTerminal } from '../game/hidden-terminal.js';
 import { getChapter } from '../game/base-script-loader.js';
@@ -273,6 +274,12 @@ async function handleLogin(session: Session, frame: ScreenFrame): Promise<boolea
 
     await gameOnLogin(user.id);
 
+    // Record player-scoped last caller
+    const db = getDb();
+    await db.lastCaller.create({
+      data: { playerGameId: game.id, userId: user.id, handle: user.handle, location: user.location, node: session.nodeNumber },
+    });
+
     // Connection effect for returning players past prologue
     if (game.chapter !== 'prologue' && game.totalSessions > 1) {
       frame.skipLine();
@@ -308,7 +315,7 @@ async function handleLogin(session: Session, frame: ScreenFrame): Promise<boolea
     await terminal.pause();
 
     // New message scan (classic BBS login feature)
-    await newMessageScan(session, frame);
+    await newMessageScan(game.id, session, frame);
 
     return true;
   } catch (err) {
@@ -414,10 +421,6 @@ async function handleNewUser(session: Session, frame: ScreenFrame): Promise<bool
       update: { userId: user.id, remoteAddress: session.remoteAddress, connectedAt: new Date(), activity: 'Main Menu', authenticated: true },
     });
 
-    await db.lastCaller.create({
-      data: { userId: user.id, handle: user.handle, location: user.location, node: session.nodeNumber },
-    });
-
     eventBus.emit('user:login', { nodeNumber: session.nodeNumber, userId: user.id, handle: user.handle });
 
     frame.skipLine();
@@ -441,6 +444,11 @@ async function handleNewUser(session: Session, frame: ScreenFrame): Promise<bool
 
     // Initialize game state
     const game = await createPlayerGame(user.id, language);
+    await seedPlayerContent(game.id);
+
+    await db.lastCaller.create({
+      data: { playerGameId: game.id, userId: user.id, handle: user.handle, location: user.location, node: session.nodeNumber },
+    });
     await addGameEvent(game, 'game_start', `New game started, language: ${language}`, { language }, 10);
     await addStoryLogEntry(game, 'login', 'Game initialized');
     await injectGhostOneLiners(game);
@@ -532,12 +540,12 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
 
     // Dispatch to module
     switch (choice) {
-      case 'E': await mailModule(session, frame); break;
-      case 'M': await messageAreaModule(session, frame); break;
-      case 'O': await oneLinersModule(session, frame); break;
+      case 'E': await mailModule(game!.id, session, frame); break;
+      case 'M': await messageAreaModule(session, frame, game!.id); break;
+      case 'O': await oneLinersModule(game!.id, session, frame); break;
       case 'W': await whoIsOnlineModule(session, frame); break;
       case 'U': await userProfileModule(session, frame); break;
-      case 'L': await lastCallersModule(session, frame); break;
+      case 'L': await lastCallersModule(game!.id, session, frame); break;
       case 'B': await comingSoon(session, frame, 'Main Menu'); break;
       case 'T': if (game) await terminalScreen(session, frame, game); break;
       case 'F':
@@ -547,7 +555,7 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
         }
         break;
       case 'J': if (game) await journalScreen(session, frame, game); break;
-      case 'S': await systemStatsModule(session, frame); break;
+      case 'S': await systemStatsModule(game!.id, session, frame); break;
       case 'G': await handleGoodbye(session, frame); return;
     }
 
@@ -603,7 +611,7 @@ async function comingSoon(session: Session, frame: ScreenFrame, from: string): P
 
 let currentAreaTag = 'local.general';
 
-async function messageAreaModule(session: Session, frame: ScreenFrame): Promise<void> {
+async function messageAreaModule(session: Session, frame: ScreenFrame, pgId: number): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
   let selectedIndex = 0;
@@ -612,10 +620,10 @@ async function messageAreaModule(session: Session, frame: ScreenFrame): Promise<
   while (true) {
     const area = await messageService.getAreaByTag(currentAreaTag);
     const areaName = area?.name ?? currentAreaTag;
-    const count = area ? await messageService.getMessageCount(area.id) : 0;
-    const unread = area && session.user ? await messageService.getUnreadCount(area.id, session.user.id) : 0;
+    const count = area ? await messageService.getMessageCount(pgId, area.id) : 0;
+    const unread = area && session.user ? await messageService.getUnreadCount(pgId, area.id, session.user.id) : 0;
 
-    const messages = area ? await messageService.getMessages(area.id, 500) : [];
+    const messages = area ? await messageService.getMessages(pgId, area.id, 500) : [];
     const sorted = [...messages].reverse();
     log.debug({ area: currentAreaTag, msgCount: sorted.length, pageStart, selectedIndex, listRows }, 'Message list render');
     const lastReadId = (session.user && area)
@@ -660,8 +668,8 @@ async function messageAreaModule(session: Session, frame: ScreenFrame): Promise<
         c(Color.Yellow, 'Q') + c(Color.DarkGray, ']uit: '),
       );
       const ch = await terminal.readHotkey(['P', 'C', 'Q']);
-      if (ch === 'P') { await postMessage(session, frame); continue; }
-      if (ch === 'C') { await changeArea(session, frame); selectedIndex = 0; pageStart = 0; continue; }
+      if (ch === 'P') { await postMessage(pgId, session, frame); continue; }
+      if (ch === 'C') { await changeArea(pgId, session, frame); selectedIndex = 0; pageStart = 0; continue; }
       if (ch === 'Q') return;
       continue;
     }
@@ -744,18 +752,18 @@ async function messageAreaModule(session: Session, frame: ScreenFrame): Promise<
         selectedIndex = Math.min(sorted.length - 1, selectedIndex + listRows);
         continue;
       case 'ENTER':
-        await readMessageAt(session, frame, sorted, selectedIndex, area!);
+        await readMessageAt(pgId, session, frame, sorted, selectedIndex, area!);
         continue;
       case 'P':
-        await postMessage(session, frame);
+        await postMessage(pgId, session, frame);
         continue;
       case 'C':
-        await changeArea(session, frame);
+        await changeArea(pgId, session, frame);
         selectedIndex = 0;
         pageStart = 0;
         continue;
       case 'S':
-        await scanMessages(session, frame);
+        await scanMessages(pgId, session, frame);
         continue;
       case 'Q':
         return;
@@ -765,6 +773,7 @@ async function messageAreaModule(session: Session, frame: ScreenFrame): Promise<
 
 // Read a single message and allow N/P navigation from there
 async function readMessageAt(
+  pgId: number,
   session: Session,
   frame: ScreenFrame,
   sorted: messageService.Message[],
@@ -843,13 +852,13 @@ async function readMessageAt(
     switch (choice) {
       case 'N': if (index < sorted.length - 1) index++; break;
       case 'P': if (index > 0) index--; break;
-      case 'R': await postMessage(session, frame, sorted[index]); break;
+      case 'R': await postMessage(pgId, session, frame, sorted[index]); break;
       case 'Q': return;
     }
   }
 }
 
-async function changeArea(session: Session, frame: ScreenFrame): Promise<void> {
+async function changeArea(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
 
@@ -867,8 +876,8 @@ async function changeArea(session: Session, frame: ScreenFrame): Promise<void> {
     for (const a of areas) {
       areaList.push(a);
       const num = areaList.length;
-      const count = await messageService.getMessageCount(a.id);
-      const unread = session.user ? await messageService.getUnreadCount(a.id, session.user.id) : 0;
+      const count = await messageService.getMessageCount(pgId, a.id);
+      const unread = session.user ? await messageService.getUnreadCount(pgId, a.id, session.user.id) : 0;
       const marker = currentAreaTag === a.tag ? c(Color.White, '>') : ' ';
       const unreadStr = unread > 0 ? c(Color.LightGreen, padRight(`${unread} new`, 8)) : c(Color.DarkGray, padRight('', 8));
 
@@ -896,11 +905,11 @@ async function changeArea(session: Session, frame: ScreenFrame): Promise<void> {
 }
 
 // Convenience wrapper for new message scan — reads from first message in current area
-async function readMessages(session: Session, frame: ScreenFrame): Promise<void> {
+async function readMessages(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
   const area = await messageService.getAreaByTag(currentAreaTag);
   if (!area) return;
 
-  const messages = await messageService.getMessages(area.id, 500);
+  const messages = await messageService.getMessages(pgId, area.id, 500);
   if (messages.length === 0) {
     const config = getConfig();
     frame.refresh([config.general.bbsName, 'Messages', 'Read'], HOTKEYS_PAUSE);
@@ -913,10 +922,10 @@ async function readMessages(session: Session, frame: ScreenFrame): Promise<void>
   }
 
   const sorted = [...messages].reverse();
-  await readMessageAt(session, frame, sorted, 0, area);
+  await readMessageAt(pgId, session, frame, sorted, 0, area);
 }
 
-async function postMessage(session: Session, frame: ScreenFrame, replyTo?: messageService.Message): Promise<void> {
+async function postMessage(pgId: number, session: Session, frame: ScreenFrame, replyTo?: messageService.Message): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
   const area = await messageService.getAreaByTag(currentAreaTag);
@@ -1002,7 +1011,7 @@ async function postMessage(session: Session, frame: ScreenFrame, replyTo?: messa
   const save = await terminal.promptYesNo(c(Color.LightCyan, 'Save this message?'));
 
   if (save) {
-    await messageService.postMessage(area.id, session.user.id, session.handle, subject, bodyLines.join('\n'), {
+    await messageService.postMessage(pgId, area.id, session.user.id, session.handle, subject, bodyLines.join('\n'), {
       toName,
       replyToId: replyTo?.id,
     });
@@ -1015,7 +1024,7 @@ async function postMessage(session: Session, frame: ScreenFrame, replyTo?: messa
   await new Promise((r) => setTimeout(r, 1000));
 }
 
-async function scanMessages(session: Session, frame: ScreenFrame): Promise<void> {
+async function scanMessages(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
   if (!session.user) return;
@@ -1030,7 +1039,7 @@ async function scanMessages(session: Session, frame: ScreenFrame): Promise<void>
   let totalNew = 0;
 
   for (const a of areas) {
-    const unread = await messageService.getUnreadCount(a.id, session.user.id);
+    const unread = await messageService.getUnreadCount(pgId, a.id, session.user.id);
     if (unread > 0) {
       frame.writeContentLine(
         c(Color.LightCyan, padRight(a.name, 33)) +
@@ -1056,7 +1065,7 @@ async function scanMessages(session: Session, frame: ScreenFrame): Promise<void>
 // Personal Mail
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function mailModule(session: Session, frame: ScreenFrame): Promise<void> {
+async function mailModule(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
   if (!session.user) return;
@@ -1073,7 +1082,7 @@ async function mailModule(session: Session, frame: ScreenFrame): Promise<void> {
     );
     frame.writeContentLine(c(Color.DarkGray, '─'.repeat(frame.contentWidth)));
 
-    const mail = await messageService.getMailForUser(session.handle, 50);
+    const mail = await messageService.getMailForUser(pgId, session.handle, 50);
 
     if (mail.length === 0) {
       frame.skipLine();
@@ -1227,7 +1236,7 @@ async function mailModule(session: Session, frame: ScreenFrame): Promise<void> {
       if (bodyLines.length > 0) {
         const save = await terminal.promptYesNo(c(Color.Yellow, 'Send this mail?'));
         if (save) {
-          await messageService.sendMail(session.user.id, session.handle, toName, subject, bodyLines.join('\n'));
+          await messageService.sendMail(pgId, session.user.id, session.handle, toName, subject, bodyLines.join('\n'));
           terminal.write(c(Color.LightGreen, ' Mail sent!'));
           await new Promise((r) => setTimeout(r, 1000));
         }
@@ -1238,7 +1247,7 @@ async function mailModule(session: Session, frame: ScreenFrame): Promise<void> {
 
 // ─── New Message Scan (classic BBS login feature) ───────────────────────────
 
-async function newMessageScan(session: Session, frame: ScreenFrame): Promise<void> {
+async function newMessageScan(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
   if (!session.user) return;
 
   try {
@@ -1251,13 +1260,13 @@ async function newMessageScan(session: Session, frame: ScreenFrame): Promise<voi
     for (const a of areas) {
       // Skip game-internal and mail areas
       if (a.tag.startsWith('lastlogon') || a.tag.startsWith('mail')) continue;
-      const unread = await messageService.getUnreadCount(a.id, session.user!.id);
+      const unread = await messageService.getUnreadCount(pgId, a.id, session.user!.id);
       if (unread > 0) {
         unreadAreas.push({ name: a.name, count: unread });
       }
     }
 
-    const mailCount = await messageService.getUnreadMailCount(session.user.id, session.handle);
+    const mailCount = await messageService.getUnreadMailCount(pgId, session.user.id, session.handle);
 
     if (unreadAreas.length === 0 && mailCount === 0) return;
 
@@ -1377,7 +1386,7 @@ async function userProfileModule(session: Session, frame: ScreenFrame): Promise<
 // Last Callers
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function lastCallersModule(session: Session, frame: ScreenFrame): Promise<void> {
+async function lastCallersModule(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
   const db = getDb();
@@ -1392,6 +1401,7 @@ async function lastCallersModule(session: Session, frame: ScreenFrame): Promise<
   frame.writeContentLine(c(Color.DarkCyan, '─'.repeat(frame.contentWidth)));
 
   const callers = await db.lastCaller.findMany({
+    where: { playerGameId: pgId },
     orderBy: { loginAt: 'desc' },
     take: 18,
   });
@@ -1418,7 +1428,7 @@ async function lastCallersModule(session: Session, frame: ScreenFrame): Promise<
 // One-Liners
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function oneLinersModule(session: Session, frame: ScreenFrame): Promise<void> {
+async function oneLinersModule(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
   const db = getDb();
@@ -1433,6 +1443,7 @@ async function oneLinersModule(session: Session, frame: ScreenFrame): Promise<vo
   frame.skipLine();
 
   const liners = await db.oneliner.findMany({
+    where: { playerGameId: pgId },
     orderBy: { postedAt: 'desc' },
     take: 15,
   });
@@ -1459,7 +1470,7 @@ async function oneLinersModule(session: Session, frame: ScreenFrame): Promise<vo
       const text = await terminal.readLine({ maxLength: 65 });
       if (text) {
         await db.oneliner.create({
-          data: { userId: session.user.id, handle: session.handle, text },
+          data: { playerGameId: pgId, userId: session.user.id, handle: session.handle, text },
         });
       }
     }
@@ -1473,7 +1484,7 @@ async function oneLinersModule(session: Session, frame: ScreenFrame): Promise<vo
 // System Stats
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function systemStatsModule(session: Session, frame: ScreenFrame): Promise<void> {
+async function systemStatsModule(pgId: number, session: Session, frame: ScreenFrame): Promise<void> {
   const terminal = session.terminal;
   const config = getConfig();
   const db = getDb();
@@ -1485,7 +1496,7 @@ async function systemStatsModule(session: Session, frame: ScreenFrame): Promise<
   frame.skipLine();
 
   const userCount = await db.user.count();
-  const msgCount = await db.message.count();
+  const msgCount = await db.message.count({ where: { playerGameId: pgId } });
   const areaCount = await db.messageArea.count();
   const onlineCount = await db.node.count({ where: { authenticated: true } });
   const callsAgg = await db.user.aggregate({ _sum: { totalCalls: true } });

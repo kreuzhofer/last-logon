@@ -19,6 +19,7 @@ import { initDatabase, closeDatabase, getDb } from '../../src/core/database.js';
 
 let db: PrismaClient;
 let testUserId: number;
+let testPgId: number;
 
 beforeAll(async () => {
   db = await initDatabase();
@@ -28,6 +29,7 @@ beforeAll(async () => {
   await db.message.deleteMany();
   await db.messageArea.deleteMany();
   await db.messageConference.deleteMany();
+  await db.playerGame.deleteMany();
   await db.user.deleteMany();
 
   // Create a test user for posting messages
@@ -40,6 +42,12 @@ beforeAll(async () => {
     },
   });
   testUserId = user.id;
+
+  // Create a test player game for scoping
+  const game = await db.playerGame.create({
+    data: { userId: user.id },
+  });
+  testPgId = game.id;
 });
 
 afterAll(async () => {
@@ -49,6 +57,7 @@ afterAll(async () => {
     await db.message.deleteMany();
     await db.messageArea.deleteMany();
     await db.messageConference.deleteMany();
+    await db.playerGame.deleteMany();
     await db.user.deleteMany();
     await closeDatabase();
   }
@@ -211,7 +220,7 @@ describe('postMessage', () => {
   });
 
   it('should create a message and return it', async () => {
-    const msg = await postMessage(areaId, testUserId, 'TestUser', 'Hello World', 'This is a test message');
+    const msg = await postMessage(testPgId, areaId, testUserId, 'TestUser', 'Hello World', 'This is a test message');
 
     expect(msg).toBeDefined();
     expect(msg.id).toBeGreaterThan(0);
@@ -231,22 +240,22 @@ describe('postMessage', () => {
       data: { totalPosts: 0 },
     });
 
-    await postMessage(areaId, testUserId, 'TestUser', 'Post 1', 'Body 1');
-    await postMessage(areaId, testUserId, 'TestUser', 'Post 2', 'Body 2');
+    await postMessage(testPgId, areaId, testUserId, 'TestUser', 'Post 1', 'Body 1');
+    await postMessage(testPgId, areaId, testUserId, 'TestUser', 'Post 2', 'Body 2');
 
     const user = await db.user.findUnique({ where: { id: testUserId } });
     expect(user!.totalPosts).toBe(2);
   });
 
   it('should set toName when provided', async () => {
-    const msg = await postMessage(areaId, testUserId, 'TestUser', 'DM', 'Private', { toName: 'OtherUser' });
+    const msg = await postMessage(testPgId, areaId, testUserId, 'TestUser', 'DM', 'Private', { toName: 'OtherUser' });
 
     expect(msg.toName).toBe('OtherUser');
   });
 
   it('should set replyToId when provided', async () => {
-    const original = await postMessage(areaId, testUserId, 'TestUser', 'Original', 'Original body');
-    const reply = await postMessage(areaId, testUserId, 'TestUser', 'Re: Original', 'Reply body', {
+    const original = await postMessage(testPgId, areaId, testUserId, 'TestUser', 'Original', 'Original body');
+    const reply = await postMessage(testPgId, areaId, testUserId, 'TestUser', 'Re: Original', 'Reply body', {
       replyToId: original.id,
     });
 
@@ -267,12 +276,12 @@ describe('getMessages', () => {
 
     // Create messages with slight time separation to ensure ordering
     for (let i = 1; i <= 5; i++) {
-      await postMessage(areaId, testUserId, 'TestUser', `Message ${i}`, `Body ${i}`);
+      await postMessage(testPgId, areaId, testUserId, 'TestUser', `Message ${i}`, `Body ${i}`);
     }
   });
 
   it('should return messages for an area in descending order by createdAt', async () => {
-    const messages = await getMessages(areaId);
+    const messages = await getMessages(testPgId, areaId);
 
     expect(messages.length).toBe(5);
     // descending order means most recent first
@@ -282,13 +291,13 @@ describe('getMessages', () => {
   });
 
   it('should respect limit parameter', async () => {
-    const messages = await getMessages(areaId, 3);
+    const messages = await getMessages(testPgId, areaId, 3);
     expect(messages.length).toBe(3);
   });
 
   it('should respect offset parameter', async () => {
-    const allMessages = await getMessages(areaId);
-    const offsetMessages = await getMessages(areaId, 50, 2);
+    const allMessages = await getMessages(testPgId, areaId);
+    const offsetMessages = await getMessages(testPgId, areaId, 50, 2);
 
     expect(offsetMessages.length).toBe(3);
     // offset=2 should skip the first 2 messages (most recent)
@@ -297,7 +306,7 @@ describe('getMessages', () => {
 
   it('should return empty array for area with no messages', async () => {
     const techArea = await getAreaByTag('tech.programming');
-    const messages = await getMessages(techArea!.id);
+    const messages = await getMessages(testPgId, techArea!.id);
     expect(messages).toEqual([]);
   });
 });
@@ -309,7 +318,7 @@ describe('getMessage', () => {
 
   beforeAll(async () => {
     const area = await getAreaByTag('local.general');
-    const msg = await postMessage(area!.id, testUserId, 'TestUser', 'Findable', 'Can be found by ID');
+    const msg = await postMessage(testPgId, area!.id, testUserId, 'TestUser', 'Findable', 'Can be found by ID');
     existingMessageId = msg.id;
   });
 
@@ -337,19 +346,19 @@ describe('getMessageCount', () => {
     const area = await getAreaByTag('retro.hardware');
     areaId = area!.id;
 
-    await postMessage(areaId, testUserId, 'TestUser', 'HW 1', 'Hardware post 1');
-    await postMessage(areaId, testUserId, 'TestUser', 'HW 2', 'Hardware post 2');
-    await postMessage(areaId, testUserId, 'TestUser', 'HW 3', 'Hardware post 3');
+    await postMessage(testPgId, areaId, testUserId, 'TestUser', 'HW 1', 'Hardware post 1');
+    await postMessage(testPgId, areaId, testUserId, 'TestUser', 'HW 2', 'Hardware post 2');
+    await postMessage(testPgId, areaId, testUserId, 'TestUser', 'HW 3', 'Hardware post 3');
   });
 
   it('should return correct message count for an area', async () => {
-    const count = await getMessageCount(areaId);
+    const count = await getMessageCount(testPgId, areaId);
     expect(count).toBe(3);
   });
 
   it('should return 0 for area with no messages', async () => {
     const emptyArea = await getAreaByTag('tech.ai');
-    const count = await getMessageCount(emptyArea!.id);
+    const count = await getMessageCount(testPgId, emptyArea!.id);
     expect(count).toBe(0);
   });
 });
@@ -369,13 +378,13 @@ describe('getUnreadCount and markRead', () => {
 
     messageIds = [];
     for (let i = 1; i <= 4; i++) {
-      const msg = await postMessage(areaId, testUserId, 'TestUser', `Msg ${i}`, `Body ${i}`);
+      const msg = await postMessage(testPgId, areaId, testUserId, 'TestUser', `Msg ${i}`, `Body ${i}`);
       messageIds.push(msg.id);
     }
   });
 
   it('should return total message count when nothing is read', async () => {
-    const unread = await getUnreadCount(areaId, testUserId);
+    const unread = await getUnreadCount(testPgId, areaId, testUserId);
     expect(unread).toBe(4);
   });
 
@@ -383,7 +392,7 @@ describe('getUnreadCount and markRead', () => {
     // Mark the second message as read (all messages up to that ID are considered read)
     await markRead(testUserId, areaId, messageIds[1]);
 
-    const unread = await getUnreadCount(areaId, testUserId);
+    const unread = await getUnreadCount(testPgId, areaId, testUserId);
     // Messages with id > messageIds[1] are unread — that should be messageIds[2] and messageIds[3]
     expect(unread).toBe(2);
   });
@@ -392,7 +401,7 @@ describe('getUnreadCount and markRead', () => {
     // Mark the last message as read
     await markRead(testUserId, areaId, messageIds[3]);
 
-    const unread = await getUnreadCount(areaId, testUserId);
+    const unread = await getUnreadCount(testPgId, areaId, testUserId);
     expect(unread).toBe(0);
   });
 
@@ -400,7 +409,7 @@ describe('getUnreadCount and markRead', () => {
     // Mark read again with the same message ID — should not throw
     await markRead(testUserId, areaId, messageIds[3]);
 
-    const unread = await getUnreadCount(areaId, testUserId);
+    const unread = await getUnreadCount(testPgId, areaId, testUserId);
     expect(unread).toBe(0);
   });
 
@@ -416,7 +425,7 @@ describe('getUnreadCount and markRead', () => {
     });
 
     // User2 has not read anything
-    const unreadUser2 = await getUnreadCount(areaId, user2.id);
+    const unreadUser2 = await getUnreadCount(testPgId, areaId, user2.id);
     expect(unreadUser2).toBe(4);
 
     // Clean up user2

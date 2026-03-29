@@ -90,14 +90,17 @@ model SystemLog {
 // ─── One-Liners ─────────────────────────────────────────────────────────────
 
 model Oneliner {
-  id       Int      @id @default(autoincrement())
-  userId   Int      @map("user_id")
-  handle   String
-  text     String
-  postedAt DateTime @default(now()) @map("posted_at")
+  id           Int      @id @default(autoincrement())
+  playerGameId Int      @map("player_game_id")
+  userId       Int      @map("user_id")
+  handle       String
+  text         String
+  postedAt     DateTime @default(now()) @map("posted_at")
 
-  user User @relation(fields: [userId], references: [id])
+  playerGame PlayerGame @relation(fields: [playerGameId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
 
+  @@index([playerGameId])
   @@map("oneliners")
 }
 
@@ -147,29 +150,37 @@ model PollVote {
 // ─── Bulletins ──────────────────────────────────────────────────────────────
 
 model Bulletin {
-  id        Int      @id @default(autoincrement())
-  number    Int      @unique
-  title     String
-  artFile   String?  @map("art_file")
-  body      String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
+  id           Int      @id @default(autoincrement())
+  playerGameId Int      @map("player_game_id")
+  number       Int
+  title        String
+  artFile      String?  @map("art_file")
+  body         String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
 
+  playerGame PlayerGame @relation(fields: [playerGameId], references: [id])
+
+  @@unique([playerGameId, number])
+  @@index([playerGameId])
   @@map("bulletins")
 }
 
 // ─── Last Callers ───────────────────────────────────────────────────────────
 
 model LastCaller {
-  id       Int      @id @default(autoincrement())
-  userId   Int      @map("user_id")
-  handle   String
-  location String?
-  node     Int?
-  loginAt  DateTime @default(now()) @map("login_at")
+  id           Int      @id @default(autoincrement())
+  playerGameId Int      @map("player_game_id")
+  userId       Int      @map("user_id")
+  handle       String
+  location     String?
+  node         Int?
+  loginAt      DateTime @default(now()) @map("login_at")
 
-  user User @relation(fields: [userId], references: [id])
+  playerGame PlayerGame @relation(fields: [playerGameId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
 
+  @@index([playerGameId])
   @@map("last_callers")
 }
 
@@ -208,24 +219,26 @@ model MessageArea {
 }
 
 model Message {
-  id         Int      @id @default(autoincrement())
-  areaId     Int      @map("area_id")
-  replyToId  Int?     @map("reply_to_id")
-  fromUserId Int?     @map("from_user_id")
-  fromName   String   @map("from_name")
-  toName     String   @default("All") @map("to_name")
-  subject    String
-  body       String
-  origin     String   @default("local")
-  originId   String?  @map("origin_id")
-  createdAt  DateTime @default(now()) @map("created_at")
+  id           Int      @id @default(autoincrement())
+  playerGameId Int      @map("player_game_id")
+  areaId       Int      @map("area_id")
+  replyToId    Int?     @map("reply_to_id")
+  fromUserId   Int?     @map("from_user_id")
+  fromName     String   @map("from_name")
+  toName       String   @default("All") @map("to_name")
+  subject      String
+  body         String
+  origin       String   @default("local")
+  originId     String?  @map("origin_id")
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  area     MessageArea @relation(fields: [areaId], references: [id])
-  replyTo  Message?    @relation("MessageThread", fields: [replyToId], references: [id])
-  replies  Message[]   @relation("MessageThread")
-  fromUser User?       @relation(fields: [fromUserId], references: [id])
+  playerGame PlayerGame @relation(fields: [playerGameId], references: [id])
+  area       MessageArea @relation(fields: [areaId], references: [id])
+  replyTo    Message?    @relation("MessageThread", fields: [replyToId], references: [id])
+  replies    Message[]   @relation("MessageThread")
+  fromUser   User?       @relation(fields: [fromUserId], references: [id])
 
-  @@index([areaId, createdAt])
+  @@index([playerGameId, areaId, createdAt])
   @@index([origin, originId])
   @@map("messages")
 }
@@ -320,6 +333,10 @@ model PlayerGame {
   user   User        @relation(fields: [userId], references: [id])
   events GameEvent[]
   npcs   GameNPC[]
+  messages   Message[]
+  oneliners  Oneliner[]
+  lastCallers LastCaller[]
+  bulletins  Bulletin[]
 
   @@map("player_games")
 }
