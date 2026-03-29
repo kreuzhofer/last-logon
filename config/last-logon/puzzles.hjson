@@ -217,6 +217,60 @@
       }
     }
     {
+      tag: "final_trace"
+      type: "exploration"
+      chapter: "chapter4"
+      difficulty: "hard"
+      presentation: '''
+        |12═══ FINAL SERVER TRACE ═══|08
+
+        |07The evidence is assembled. One last step: use the
+        |07hidden terminal to complete the network trace.
+
+        |07The final hop reveals the server's physical location.
+        |07Navigate to |15/system/logs/trace/final_hop.log|07
+        |07and find the IP address of the origin server.
+
+        |08Enter the server's IP address:
+      '''
+      presentationDe: '''
+        |12═══ LETZTE SERVER-RÜCKVERFOLGUNG ═══|08
+
+        |07Die Beweise sind zusammengestellt. Ein letzter Schritt:
+        |07Benutze das Hidden Terminal um die Netzwerk-Rückverfolgung
+        |07abzuschließen.
+
+        |07Der letzte Hop enthüllt den physischen Standort des Servers.
+        |07Navigiere zu |15/system/logs/trace/final_hop.log|07
+        |07und finde die IP-Adresse des Ursprungsservers.
+
+        |08Gib die IP-Adresse des Servers ein:
+      '''
+      validator: "contains"
+      answers: []
+      fuzzyTokens: ["192", "168", "44", "1"]
+      maxAttempts: 10
+      hints: [
+        "Use the Hidden Terminal. Navigate to /system/logs/trace/"
+        "Read final_hop.log carefully — the IP address is in the last line."
+        "The IP address format is 192.168.44.1"
+      ]
+      hintsDe: [
+        "Benutze das Hidden Terminal. Navigiere zu /system/logs/trace/"
+        "Lies final_hop.log genau — die IP-Adresse steht in der letzten Zeile."
+        "Das IP-Adressformat ist 192.168.44.1"
+      ]
+      onSolve: {
+        clue: "server_location"
+        killerResponse: "manic"
+        trustDelta: 30
+      }
+      onFail: {
+        killerResponse: "threatening"
+        trustDelta: -15
+      }
+    }
+    {
       tag: "assemble_evidence"
       type: "logic"
       chapter: "chapter4"

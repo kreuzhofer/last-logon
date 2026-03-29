@@ -108,6 +108,9 @@ export interface ChapterDef {
   progression: {
     advanceTo: ChapterTag;
     requires: string[];       // Beat tags required
+    minLogins?: number;
+    alternateAdvanceTo?: ChapterTag;
+    alternateCondition?: string;
   };
 }
 

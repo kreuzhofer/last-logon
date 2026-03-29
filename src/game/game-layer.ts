@@ -297,11 +297,21 @@ export async function checkChapterProgression(game: PlayerGame): Promise<boolean
   if (!allRequired) return false;
 
   // Check minimum logins if specified
-  const minLogins = (chapter.progression as unknown as { minLogins?: number }).minLogins;
-  if (minLogins && game.totalSessions < minLogins) return false;
+  if (chapter.progression.minLogins && game.totalSessions < chapter.progression.minLogins) return false;
 
-  // Advance chapter
-  const nextChapter = chapter.progression.advanceTo;
+  // Determine which chapter to advance to (supports branching endings)
+  let nextChapter = chapter.progression.advanceTo;
+
+  if (chapter.progression.alternateAdvanceTo && chapter.progression.alternateCondition) {
+    const shouldTakeAlternate = evaluateAlternateCondition(
+      chapter.progression.alternateCondition,
+      game,
+    );
+    if (shouldTakeAlternate) {
+      nextChapter = chapter.progression.alternateAdvanceTo;
+    }
+  }
+
   const phase = getPhaseForChapter(nextChapter as ChapterTag);
 
   await updatePlayerGame(game.id, {
@@ -313,6 +323,25 @@ export async function checkChapterProgression(game: PlayerGame): Promise<boolean
   log.info({ gameId: game.id, from: game.chapter, to: nextChapter }, 'Chapter advanced');
 
   return true;
+}
+
+/**
+ * Evaluate whether a chapter should branch to its alternate path.
+ * Currently supports:
+ * - "timeout_or_wrong": killer escapes if suspicion is low (player wasn't thorough enough)
+ *   The "caught" ending requires suspicion >= 60 (player gathered enough evidence against killer).
+ *   Otherwise the killer escapes.
+ */
+function evaluateAlternateCondition(condition: string, game: PlayerGame): boolean {
+  switch (condition) {
+    case 'timeout_or_wrong':
+      // Player needs high suspicion (evidence of wrongdoing) to catch the killer.
+      // Below threshold = killer escapes (alternate path).
+      return game.suspicionLevel < 60;
+    default:
+      log.warn({ condition }, 'Unknown alternate condition, using primary path');
+      return false;
+  }
 }
 
 function getPhaseForChapter(chapter: ChapterTag): GamePhase {
