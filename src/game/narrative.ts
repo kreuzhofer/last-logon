@@ -195,6 +195,55 @@ export function displayClueEntry(
   );
 }
 
+// ─── Sound Effects ──────────────────────────────────────────────────────────
+
+/** Terminal bell — used for jump scares and urgent notifications */
+export function bell(terminal: Terminal): void {
+  terminal.write('\x07');
+}
+
+/** Flash the screen briefly (invert colors) for a startle effect */
+export async function flashEffect(terminal: Terminal, frame: ScreenFrame): Promise<void> {
+  // Invert screen colors briefly
+  terminal.write('\x1b[?5h'); // Enable reverse video
+  await sleep(100);
+  terminal.write('\x1b[?5l'); // Disable reverse video
+}
+
+/** Creepy slow reveal — text appears character by character with random delays */
+export async function creepyReveal(
+  terminal: Terminal,
+  frame: ScreenFrame,
+  text: string,
+  color: Color = Color.LightRed,
+): Promise<void> {
+  terminal.write(setColor(color));
+  for (const char of text) {
+    terminal.write(char);
+    await sleep(50 + Math.random() * 150); // Random delay 50-200ms
+  }
+  terminal.write(resetColor());
+}
+
+/** Distortion effect — briefly replace screen content with noise */
+export async function distortionEffect(terminal: Terminal, frame: ScreenFrame): Promise<void> {
+  const noiseChars = '░▒▓█▀▄▌▐│─┤├┼┬┴┐┌┘└';
+  const w = frame.contentWidth;
+
+  // Flash noise for a few frames
+  for (let f = 0; f < 3; f++) {
+    for (let row = frame.contentTop; row <= frame.contentTop + 5; row++) {
+      terminal.moveTo(row, frame.contentLeft);
+      let noise = '';
+      for (let i = 0; i < w; i++) {
+        noise += noiseChars[Math.floor(Math.random() * noiseChars.length)]!;
+      }
+      terminal.write(setColor(Color.DarkGray) + noise + resetColor());
+    }
+    await sleep(80);
+  }
+}
+
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
 function sleep(ms: number): Promise<void> {
