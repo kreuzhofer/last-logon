@@ -185,62 +185,76 @@ Key pillars:
   - `prisma migrate deploy` for production
   - Never reset DB without explicit user permission
 
-### P1 — Should Have (Enriches Experience)
+### P1 — The Living BBS (Next Priority)
 
-- [ ] **NPC AI responses** — Implement `generateNPCResponse()` in ai-engine.ts
-  - Use existing `npcSystemPrompt` template
-  - Allow players to reply to NPC messages and get AI-generated responses
-  - Wire into message system (player writes reply → AI generates NPC response)
+- [ ] **5x seed content** — Expand from ~40 to ~200 messages across all boards
+  - Deeper retro computing threads, more BBS nostalgia, richer NPC personalities
+  - Date seed messages relative to player's registration (not absolute dates)
+  - More message areas with active discussions
+  - Each NPC should have a distinct voice and posting style
+
+- [ ] **Convert story beats to natural messages** — No more cutscene interruptions
+  - "People disappeared" beats → personal message from a worried NPC
+  - "Police investigation" → post in local.general from an NPC who saw something
+  - All story progression delivered through BBS content, not splash screens
+  - Player discovers the story by reading the BBS, not being shown it
+
+- [ ] **Real-time notification system** — New mail alerts during BBS use
+  - Bottom bar flashes `[NEW MAIL]` when personal message arrives
+  - Hotkey (e.g., `!`) to read immediately or dismiss
+  - Blinking `[*]` indicator in top-right corner of ScreenFrame until mail is read
+  - Replaces the login-only new message scan
+
+- [ ] **Responsive NPC AI posting** — NPCs respond to player posts in near-real-time
+  - When player posts in a board, NPCs may respond within 5-30 minutes (randomized)
+  - Activity peaks during evening/night hours (server time = user time)
+  - Each NPC has personality constraints (NIGHTOWL posts late, BYTE_RUNNER is enthusiastic, DARK_MATTER is philosophical)
+  - Use Haiku for ambient NPC posts (cheap), Sonnet for story-critical moments
+  - Scheduler checks every 5-15 minutes during active hours (not hourly)
+
+- [ ] **Story orchestrator** — AI-driven narrative coherence
+  - Tracks ongoing discussion threads the AI is managing
+  - Knows what hints have been dropped, what NPCs have said, what the player has read
+  - Feeds context to NPC AI so responses build on each other
+  - Posts become subtly more unsettling as chapters progress
+  - Normal retro discussion threads start having weird tangents about system glitches and disappearances
 
 - [ ] **Bulletins screen** — Implement [B] Bulletins UI
   - Display per-player bulletins with pipe code rendering
-  - Game can inject new bulletins as story progresses (strange announcements, news of disappearances)
+  - Game injects new bulletins as story progresses (strange announcements, news of disappearances)
 
-- [ ] **Polls / voting booth UI** — DB models exist, need screen implementation
-  - Game can use polls as story devices (rigged polls, suspicious results)
+### P2 — Polish & Depth
+
+- [ ] **NPC AI conversation responses** — Players can reply to NPC messages and get AI-generated replies
+  - Use existing `npcSystemPrompt` template
+  - Wire into mail system (player writes reply → AI generates NPC response)
 
 - [ ] **ANSI art** — Welcome screens, chapter transitions, killer messages
   - `art/` directory exists but is empty
   - Classic BBS aesthetic, essential for the retro feel
-  - TheDraw/PabloDraw style art for key screens
 
-- [ ] **AI engine tests** — Mock Vercel AI SDK, test all 5 AI functions
-  - Test structured tool_use parsing
-  - Test fallback responses on API failure
-  - Test conversation window management (15-message limit)
-
-- [ ] **Integration tests** — Full game flow
-  - Init → prologue → chapter progression → puzzle solving → ending
-  - Test with mocked terminal/session
-
-### P2 — Nice to Have (Polish)
-
-- [ ] **Fix TypeScript strict errors** in ai-engine.ts
-  - Add hjson type declaration file
+- [ ] **Polls / voting booth UI** — DB models exist, need screen implementation
+  - Game can use polls as story devices (rigged polls, suspicious results)
 
 - [ ] **Adaptive difficulty system** — Killer assesses player skill and adjusts challenge accordingly
   - Track solve speed, hint usage, attempt counts, response quality across puzzles
   - Feed skill profile into killer AI prompt so the killer *actively gauges* the player
-  - Core to original vision: killer wants a worthy opponent, not a bored or frustrated one
   - If player is too good → harder puzzles, fewer hints, killer gets more guarded
-  - If player struggles → killer gets condescending but drops more breadcrumbs (ego demands an audience)
+  - If player struggles → killer drops more breadcrumbs (ego demands an audience)
 
 - [ ] **Sound effects** via terminal bell (`\x07`) for jump scares
-  - Killer messages, glitch effects, chapter transitions
 
-- [ ] **Feature revocation** — Killer can *remove* previously unlocked features as punishment or story device
-  - Player disobeys or ignores killer → access gets revoked
-  - Creates tension: progress is not guaranteed to be permanent
+- [ ] **Feature revocation** — Killer can *remove* previously unlocked features as punishment
 
-- [ ] **Hints earned through tasks** — Players who are stuck must earn hints, not get them free
-  - Killer demands a favor (solve a side-puzzle, retrieve information)
-  - Ties into killer's narcissistic personality
+- [ ] **Hints earned through tasks** — Players must earn hints by doing favors for the killer
 
-- [ ] **ASCII mini-games with embedded clues** — Classic terminal games where visual clues are hidden in gameplay
-  - Start with 2-3 simple games, expand over time
+- [ ] **ASCII mini-games with embedded clues** — Classic terminal games where clues are hidden in gameplay
 
-- [ ] **AI-generated ambient content** — Scheduler periodically generates NPC one-liners and posts to keep BBS alive between sessions
-  - 1-2 NPC one-liners per day from a rotating pool
+- [ ] **AI engine tests** — Mock Vercel AI SDK, test all 5 AI functions
+
+- [ ] **Integration tests** — Full game flow from init through chapter progression
+
+- [ ] **Fix TypeScript strict errors** in ai-engine.ts
   - No AI needed for basic version — pull from predefined pool in HJSON config
 
 ### P3 — Future Episodes & Extensions
