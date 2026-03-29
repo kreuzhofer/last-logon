@@ -1,0 +1,209 @@
+{
+  npcs: [
+    {
+      tag: "regular_user"
+      handle: "NIGHTOWL"
+      role: "fellow_user"
+      personality: '''
+        Friendly night owl. Been on the BBS for years. Nostalgic about
+        the early days. Talks about other users fondly. Doesn't suspect
+        anything sinister — at first. Gradually becomes uneasy.
+      '''
+      personalityDe: '''
+        Freundliche Nachteule. Seit Jahren im BBS. Nostalgisch über die
+        frühen Tage. Spricht liebevoll über andere User. Verdächtigt
+        anfangs nichts — wird aber allmählich unruhig.
+      '''
+      initialMessages: [
+        {
+          trigger: { type: "login_count", min: 2 }
+          subject: "Welcome aboard!"
+          body: '''
+            Hey there, new user! Welcome to the board.
+
+            I'm NIGHTOWL — been here since... well, longer than I
+            should admit. This place has a special vibe, you know?
+            Not many boards like this left.
+
+            If you need anything, just drop me a message. And check
+            out the one-liners — some real gems in there.
+
+            Stay up late. That's when the board comes alive.
+
+            — NIGHTOWL
+          '''
+          bodyDe: '''
+            Hey, neuer User! Willkommen im Board.
+
+            Ich bin NIGHTOWL — bin hier seit... naja, länger als ich
+            zugeben sollte. Dieser Ort hat eine besondere Atmosphäre,
+            weißt du? Nicht viele Mailboxen wie diese gibt es noch.
+
+            Wenn du was brauchst, schreib mir einfach. Und schau dir
+            die Einzeiler an — echte Perlen dabei.
+
+            Bleib lange auf. Da wird das Board lebendig.
+
+            — NIGHTOWL
+          '''
+        }
+      ]
+    }
+    {
+      tag: "worried_user"
+      handle: "SIGNAL_LOST"
+      role: "fellow_user"
+      personality: '''
+        Anxious, perceptive, speaks in fragments when nervous. Has noticed
+        users disappearing. Scared but compelled to investigate. Trusts
+        slowly. Uses technical jargon as a defense mechanism.
+      '''
+      personalityDe: '''
+        Ängstlich, aufmerksam, spricht in Fragmenten wenn nervös. Hat
+        bemerkt, dass User verschwinden. Verängstigt aber getrieben zu
+        ermitteln. Vertraut langsam. Nutzt Fachjargon als Abwehrmechanismus.
+      '''
+      initialMessages: [
+        {
+          trigger: { type: "clue_found", clue: "news_disappearances" }
+          subject: "Have you noticed?"
+          body: '''
+            Hey. I don't know you but... I need to talk to someone.
+
+            Have you looked at the Last Callers list recently?
+            PHANTOM_X. VOID_WALKER. MERCURY_R.
+
+            All gone. Not just inactive — GONE. Their accounts
+            deleted. Messages wiped.
+
+            I tried asking the sysop about it. He said they "moved
+            on." But I checked the access logs. Their last sessions
+            all ended the same way:
+
+            CONNECTION TERMINATED BY ADMIN.
+
+            Not by the user. By the ADMIN.
+
+            Am I being paranoid? Tell me I'm being paranoid.
+
+            — SIGNAL_LOST
+
+            P.S. Don't reply to this publicly. He reads everything.
+          '''
+          bodyDe: '''
+            Hey. Ich kenne dich nicht aber... ich muss mit jemandem reden.
+
+            Hast du dir die Letzten Anrufer Liste mal angeschaut?
+            PHANTOM_X. VOID_WALKER. MERCURY_R.
+
+            Alle weg. Nicht nur inaktiv — WEG. Accounts gelöscht.
+            Nachrichten gelöscht.
+
+            Ich hab den Sysop danach gefragt. Er sagte sie sind
+            "weitergezogen." Aber ich hab die Zugriffsprotokolle
+            geprüft. Ihre letzten Sitzungen endeten alle gleich:
+
+            VERBINDUNG VOM ADMIN GETRENNT.
+
+            Nicht vom User. Vom ADMIN.
+
+            Bin ich paranoid? Sag mir, dass ich paranoid bin.
+
+            — SIGNAL_LOST
+
+            P.S. Antworte nicht öffentlich. Er liest alles.
+          '''
+        }
+      ]
+    }
+    {
+      tag: "investigator"
+      handle: "D_COLE"
+      role: "investigator"
+      personality: '''
+        Detective working the disappearances case. Logged into the BBS
+        undercover. Speaks carefully — assumes sysop monitors all messages.
+        Uses coded language. Professional but desperate for help.
+      '''
+      personalityDe: '''
+        Ermittler der die Vermisstenfälle bearbeitet. Undercover im BBS
+        eingeloggt. Spricht vorsichtig — geht davon aus dass der Sysop
+        alle Nachrichten überwacht. Nutzt Codesprache. Professionell aber
+        verzweifelt auf der Suche nach Hilfe.
+      '''
+      initialMessages: [
+        {
+          trigger: { type: "clue_found", clue: "hidden_system_access" }
+          subject: "We should talk"
+          body: '''
+            I know what you found. I've been looking too.
+
+            Can't say much here. He watches the message boards.
+
+            If you want to help: look at the system logs.
+            There's a pattern in the timestamps.
+            Every deleted user — their last session was on a Friday.
+            Between midnight and 3 AM.
+
+            I'm D_COLE. That's all you need to know for now.
+
+            Be careful. And whatever you do:
+            Don't let him know you're onto him.
+
+            He's smarter than you think.
+          '''
+          bodyDe: '''
+            Ich weiß, was du gefunden hast. Ich suche auch.
+
+            Kann hier nicht viel sagen. Er überwacht die Nachrichtenbereiche.
+
+            Wenn du helfen willst: Schau dir die System-Logs an.
+            Es gibt ein Muster in den Zeitstempeln.
+            Jeder gelöschte User — die letzte Sitzung war an einem Freitag.
+            Zwischen Mitternacht und 3 Uhr morgens.
+
+            Ich bin D_COLE. Das ist alles, was du jetzt wissen musst.
+
+            Sei vorsichtig. Und was auch immer du tust:
+            Lass ihn nicht wissen, dass du ihm auf der Spur bist.
+
+            Er ist schlauer als du denkst.
+          '''
+        }
+      ]
+    }
+    {
+      tag: "ghost_user"
+      handle: "ECHO_7"
+      role: "ghost"
+      personality: '''
+        Not a real user — this is the corrupted remnant of a victim's account.
+        Posts appear at impossible times. Messages are fragmented, glitchy.
+        The account data is locked and cannot be deleted — a technical anomaly
+        that haunts the sysop.
+      '''
+      personalityDe: '''
+        Kein echter User — dies sind die korrumpierten Überreste eines Opfer-Accounts.
+        Posts erscheinen zu unmöglichen Zeiten. Nachrichten sind fragmentiert, fehlerhaft.
+        Die Account-Daten sind gesperrt und können nicht gelöscht werden — eine technische
+        Anomalie, die den Sysop verfolgt.
+      '''
+      oneLiners: [
+        "still here. can't leave. the door is locked from outside."
+        "01001000 01000101 01001100 01010000"
+        "friday night. don't log in on friday night."
+        "he keeps the backups in the basement"
+        "if you're reading this i'm already"
+        "ERROR: USER ECHO_7 SESSION TERMINATED UNEXPE"
+      ]
+      oneLinersDE: [
+        "immer noch hier. kann nicht gehen. die tür ist von außen verschlossen."
+        "01001000 01001001 01001100 01000110 01000101"
+        "freitag nacht. logg dich nicht am freitag nacht ein."
+        "er bewahrt die backups im keller auf"
+        "wenn du das liest bin ich bereits"
+        "FEHLER: USER ECHO_7 SITZUNG UNERWARTET BEEND"
+      ]
+    }
+  ]
+}

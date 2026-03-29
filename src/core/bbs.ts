@@ -14,6 +14,9 @@ import { eventBus } from './events.js';
 import type { SSHConnection } from '../server/connection.js';
 import * as messageService from '../messages/message-service.js';
 import { padRight, center, formatDateTime, truncate, wordWrap, formatNumber } from '../utils/string-utils.js';
+import { lastLogonDoor } from '../game/index.js';
+import { onPlayerLogin as gameOnLogin, onPlayerLogout as gameOnLogout, getPendingNotifications } from '../game/game-layer.js';
+import { startGameScheduler } from '../game/scheduler.js';
 
 const log = createChildLogger('bbs');
 
@@ -214,6 +217,16 @@ async function handleLogin(session: Session, frame: ScreenFrame): Promise<boolea
     frame.writeContentLine(c(Color.LightGreen, `Welcome back, ${user.handle}!`));
     frame.writeContentLine(c(Color.DarkGray, `Last login: ${user.lastLoginAt ? formatDateTime(user.lastLoginAt) : 'Never'}`));
     frame.writeContentLine(c(Color.DarkGray, `Call #${formatNumber(user.totalCalls)}`));
+
+    // Check for Last Logon game notifications
+    try {
+      const gameNotifs = await getPendingNotifications(user.id);
+      if (gameNotifs.length > 0) {
+        frame.skipLine();
+        frame.writeContentLine(c(Color.LightRed, `You have ${gameNotifs.length} notification(s) from Last Logon...`));
+      }
+    } catch { /* game not initialized yet, ignore */ }
+
     frame.skipLine();
 
     terminal.moveTo(frame.currentRow, frame.contentLeft);
@@ -361,7 +374,7 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
     const items: [string, string, string, string][] = [
       ['M', 'Message Areas', 'U', 'User Profile'],
       ['F', 'File Areas', 'W', 'Who\'s Online'],
-      ['D', 'Door Games', 'L', 'Last Callers'],
+      ['D', 'Last Logon', 'L', 'Last Callers'],
       ['C', 'Chat/Conference', 'O', 'One-Liners'],
       ['B', 'Bulletins', 'V', 'Voting Booth'],
       ['S', 'System Stats', 'G', 'Goodbye/Logoff'],
@@ -404,7 +417,8 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
       case 'O': await oneLinersModule(session, frame); break;
       case 'S': await systemStatsModule(session, frame); break;
       case 'G': await handleGoodbye(session, frame); return;
-      case 'F': case 'D': case 'C': case 'B': case 'V':
+      case 'D': await lastLogonDoor(session, frame); break;
+      case 'F': case 'C': case 'B': case 'V':
         await comingSoon(session, frame, 'Main Menu');
         break;
     }

@@ -47,6 +47,10 @@ model User {
   lastCallers LastCaller[]
   gameStates  GameState[]
   gameScores  GameScore[]
+  playerGame  PlayerGame?
+  gameConversations GameConversation[]
+  gameNotifications GameNotification[]
+  gamePuzzleStates  GamePuzzleState[]
 
   @@map("users")
 }
@@ -282,4 +286,117 @@ model GameScore {
 
   @@index([gameTag, score(sort: Desc)])
   @@map("game_scores")
+}
+
+// ─── Last Logon Game ────────────────────────────────────────────────────────
+
+model PlayerGame {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @unique @map("user_id")
+  language           String   @default("en")
+  chapter            String   @default("prologue")
+  phase              String   @default("prologue")
+  killerAlias        String   @default("AXIOM") @map("killer_alias")
+  killerProfile      String   @default("{}") @map("killer_profile")
+  playerProfile      String   @default("{}") @map("player_profile")
+  storyLog           String   @default("[]") @map("story_log")
+  unlockedFeatures   String   @default("[]") @map("unlocked_features")
+  activeClues        String   @default("[]") @map("active_clues")
+  solvedPuzzles      String   @default("[]") @map("solved_puzzles")
+  discoveredSecrets  String   @default("[]") @map("discovered_secrets")
+  completedBeats     String   @default("[]") @map("completed_beats")
+  killerMood         String   @default("charming") @map("killer_mood")
+  killerTrust        Int      @default(0) @map("killer_trust")
+  suspicionLevel     Int      @default(0) @map("suspicion_level")
+  totalSessions      Int      @default(0) @map("total_sessions")
+  totalInteractions  Int      @default(0) @map("total_interactions")
+  storySummary       String   @default("") @map("story_summary")
+  flags              String   @default("{}") @map("flags")
+  lastActivity       DateTime @default(now()) @map("last_activity")
+  lastAiCall         DateTime? @map("last_ai_call")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user   User        @relation(fields: [userId], references: [id])
+  events GameEvent[]
+  npcs   GameNPC[]
+
+  @@map("player_games")
+}
+
+model GameEvent {
+  id           Int      @id @default(autoincrement())
+  playerGameId Int      @map("player_game_id")
+  eventType    String   @map("event_type")
+  chapter      String
+  summary      String
+  details      String   @default("{}")
+  importance   Int      @default(5)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  playerGame PlayerGame @relation(fields: [playerGameId], references: [id])
+
+  @@index([playerGameId, createdAt])
+  @@index([playerGameId, importance])
+  @@map("game_events")
+}
+
+model GameNPC {
+  id           Int      @id @default(autoincrement())
+  playerGameId Int      @map("player_game_id")
+  handle       String
+  role         String
+  personality  String
+  status       String   @default("active")
+  relationship String   @default("stranger")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  playerGame PlayerGame @relation(fields: [playerGameId], references: [id])
+
+  @@unique([playerGameId, handle])
+  @@map("game_npcs")
+}
+
+model GameConversation {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  role      String
+  content   String
+  metadata  String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("game_conversations")
+}
+
+model GameNotification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  type      String
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, read])
+  @@map("game_notifications")
+}
+
+model GamePuzzleState {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  puzzleTag String    @map("puzzle_tag")
+  solved    Boolean   @default(false)
+  attempts  Int       @default(0)
+  hintsUsed Int       @default(0) @map("hints_used")
+  solvedAt  DateTime? @map("solved_at")
+  instanceData String @default("{}") @map("instance_data")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, puzzleTag])
+  @@map("game_puzzle_state")
 }

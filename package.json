@@ -30,7 +30,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.64",
     "@prisma/client": "^6.19.2",
+    "ai": "^6.0.141",
     "argon2": "^0.44.0",
     "hjson": "^3.2.2",
     "iconv-lite": "^0.7.2",

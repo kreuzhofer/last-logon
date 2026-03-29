@@ -1,0 +1,206 @@
+{
+  root: {
+    name: "/"
+    type: "directory"
+    children: [
+      {
+        name: "system"
+        type: "directory"
+        children: [
+          {
+            name: "motd.txt"
+            type: "file"
+            content: '''
+              |11Welcome to The Underground BBS|08
+              |07System uptime: 847 days
+              |07Active users: [REDACTED]
+              |07Last maintenance: Never.
+            '''
+            contentDe: '''
+              |11Willkommen bei The Underground BBS|08
+              |07System-Uptime: 847 Tage
+              |07Aktive User: [GESCHWÄRZT]
+              |07Letzte Wartung: Nie.
+            '''
+          }
+          {
+            name: "users.db"
+            type: "file"
+            content: '''
+              |07USER_ID  HANDLE        LAST_LOGIN         STATUS
+              |07───────  ────────────  ─────────────────  ──────
+              |07001      AXIOM         [ALWAYS ONLINE]    ADMIN
+              |07002      NIGHTOWL      2026-03-15 02:14   ACTIVE
+              |07003      SIGNAL_LOST   2026-03-20 23:41   ACTIVE
+              |07004      PHANTOM_X     2025-11-02 19:33   |12INACTIVE|07
+              |07005      DEEP_SLEEP    2025-09-14 04:17   |12INACTIVE|07
+              |07006      VOID_WALKER   2025-07-22 01:45   |04DELETED|07
+              |07007      ECHO_7        2025-06-01 00:00   |04ERROR|07
+              |07008      MERCURY_R     2025-04-10 22:58   |04DELETED|07
+              |08
+              |08Note: DELETED accounts cannot be recovered.
+              |08Note: ECHO_7 status shows ERROR — account data corrupted.
+            '''
+          }
+          {
+            name: "logs"
+            type: "directory"
+            children: [
+              {
+                name: "access.log"
+                type: "file"
+                content: '''
+                  |07[2026-03-28 02:14:33] LOGIN  node:2 user:NIGHTOWL ip:192.168.1.x
+                  |07[2026-03-28 02:15:01] READ   node:2 area:local.general msg:1142
+                  |07[2026-03-28 02:17:44] LOGOUT node:2 user:NIGHTOWL duration:3m11s
+                  |07[2026-03-28 03:00:00] |12SYSTEM  SCHEDULED TASK: user_cleanup|07
+                  |07[2026-03-28 03:00:01] |12SYSTEM  Removed 3 inactive accounts|07
+                  |07[2026-03-28 03:00:01] |12SYSTEM  WARNING: Account ECHO_7 — cannot delete, data locked|07
+                  |07[2026-03-28 04:00:00] |04ADMIN   AXIOM accessed /system/private/ from console|07
+                '''
+              }
+              {
+                name: "trace"
+                type: "directory"
+                requiredClue: "server_region"
+                children: [
+                  {
+                    name: "hop_1.log"
+                    type: "file"
+                    content: '''
+                      |07TRACE ROUTE - HOP 1
+                      |07═══════════════════
+                      |07Source: [YOUR IP]
+                      |07Destination: 10.0.0.1 (gateway)
+                      |07Latency: 2ms
+                      |07Status: OK
+                    '''
+                  }
+                  {
+                    name: "hop_2.log"
+                    type: "file"
+                    content: '''
+                      |07TRACE ROUTE - HOP 2
+                      |07═══════════════════
+                      |07Source: 10.0.0.1
+                      |07Destination: 172.16.44.1 (ISP backbone)
+                      |07Latency: 14ms
+                      |07Status: OK
+                      |07Note: Traffic routed through anonymizing relay
+                    '''
+                  }
+                  {
+                    name: "final_hop.log"
+                    type: "file"
+                    content: '''
+                      |12TRACE ROUTE - FINAL HOP|08
+                      |07═══════════════════════
+                      |07Destination: [RESOLVED]
+                      |07Physical location: |15[AI_GENERATED_CITY]|07
+                      |07ISP: Regional Cable Provider
+                      |07Facility type: |12Residential|07
+                      |07
+                      |04WARNING: Trace detected by remote host.
+                      |04WARNING: Counter-trace initiated against your node.
+                      |04WARNING: |15DISCONNECT RECOMMENDED.|07
+                    '''
+                    revealsClue: "server_location"
+                  }
+                ]
+              }
+            ]
+          }
+          {
+            name: "private"
+            type: "directory"
+            hidden: true
+            requiredClue: "hidden_system_access"
+            children: [
+              {
+                name: "notes.txt"
+                type: "file"
+                content: '''
+                  |12PERSONAL NOTES — DO NOT DISTRIBUTE|08
+
+                  |07Subject 004 (PHANTOM_X):
+                  |07  Located via IP trace. Suburban area.
+                  |07  Showed promise but ultimately |04disappointing|07.
+                  |07  Resolution: Complete. Files purged.
+
+                  |07Subject 006 (VOID_WALKER):
+                  |07  Interesting challenge. Nearly traced the server.
+                  |07  Had to accelerate the timeline.
+                  |07  Resolution: Complete. Account deleted.
+
+                  |07Subject 007 (ECHO_7):
+                  |07  |12Something went wrong.|07
+                  |07  Account cannot be purged. Data persists.
+                  |07  Note to self: investigate corruption.
+
+                  |04If you're reading this, you're either very clever
+                  |04or very foolish. Perhaps both.
+                  |04— A.
+                '''
+                revealsClue: "victim_details"
+              }
+              {
+                name: "schedule.dat"
+                type: "file"
+                content: '''
+                  |07MAINTENANCE SCHEDULE
+                  |07════════════════════
+                  |07Mon 03:00 — User cleanup (automated)
+                  |07Wed 03:00 — Log rotation
+                  |07Fri 03:00 — |12Special maintenance|07
+                  |07
+                  |08"Special maintenance" — you know what that means.
+                  |08Friday nights are when nobody's watching.
+                '''
+              }
+            ]
+          }
+        ]
+      }
+      {
+        name: "home"
+        type: "directory"
+        children: [
+          {
+            name: "axiom"
+            type: "directory"
+            hidden: true
+            children: [
+              {
+                name: ".profile"
+                type: "file"
+                content: '''
+                  |07# AXIOM's profile
+                  |07# "Everyone is a moon, and has a dark side which
+                  |07#  he never shows to anybody." — Mark Twain
+                  |07
+                  |07export EDITOR=vi
+                  |07export TERM=ansi
+                  |07alias cleanup='rm -rf /home/users/*/evidence'
+                '''
+              }
+            ]
+          }
+        ]
+      }
+      {
+        name: "tmp"
+        type: "directory"
+        children: [
+          {
+            name: "README"
+            type: "file"
+            content: '''
+              |07Temporary files are purged every 24 hours.
+              |08Nothing to see here. Move along.
+            '''
+          }
+        ]
+      }
+    ]
+  }
+}
