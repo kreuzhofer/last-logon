@@ -2,6 +2,7 @@
   // ─── Seed Data for The Neon Underground BBS ─────────────────────────────────
   // Static content that makes the board feel lived-in from day one.
   // All fake users have accessLevel: 0 (locked) so they can never actually log in.
+  // daysAgo values are relative to when the player registers.
 
   users: [
     {
@@ -22,14 +23,14 @@
       handle: "PHANTOM_X"
       location: "Austin, TX"
       createdAt: "2022-03-08T18:45:00.000Z"
-      lastLoginAt: "2025-09-15T01:10:00.000Z"
+      lastLoginAt: "2025-09-20T01:10:00.000Z"
       role: "Disappeared — noticed strange things in the system, then vanished"
     }
     {
       handle: "VOID_WALKER"
       location: ""
       createdAt: "2024-01-20T23:00:00.000Z"
-      lastLoginAt: "2025-11-10T22:45:00.000Z"
+      lastLoginAt: "2025-11-28T22:45:00.000Z"
       role: "Disappeared — nihilistic poster who drifted away quietly"
     }
     {
@@ -51,7 +52,7 @@
       location: "Toronto, CA"
       createdAt: "2023-04-14T16:30:00.000Z"
       lastLoginAt: "2026-01-20T02:30:00.000Z"
-      role: "Sporadic — comes and goes, retro hardware collector"
+      role: "Sporadic — comes and goes, retro software expert, dry humor"
     }
     {
       handle: "DARK_MATTER"
@@ -75,9 +76,11 @@
 
   messages: [
 
-    // ── local.general (13 messages) ──────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+    // ── local.general (~38 messages) ─────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
 
-    // Thread 1: Welcome thread
+    // Thread 1: Welcome thread (5 messages)
     {
       areaTag: "local.general"
       fromHandle: "AXIOM"
@@ -97,7 +100,25 @@
 
         — AXIOM
         '''
-      daysAgo: 180
+      daysAgo: 540
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "DARK_MATTER"
+      toName: "AXIOM"
+      subject: "Re: Welcome to The Neon Underground"
+      replyToSubject: "Welcome to The Neon Underground"
+      body:
+        '''
+        Good to see the board back online. I remember the last incarnation —
+        the one running on Telegard. That must have been, what, 2005?
+
+        Different software now. Different feel. But the name is the same.
+        And so is the SysOp, apparently.
+
+        Glad to be here, AXIOM. As always.
+        '''
+      daysAgo: 538
     }
     {
       areaTag: "local.general"
@@ -107,12 +128,13 @@
       replyToSubject: "Welcome to The Neon Underground"
       body:
         '''
-        Glad to be here! Found this board through a link on a retro computing
-        forum. Can't believe places like this still exist.
+        Found this board through a link on a retro computing forum. Can't
+        believe places like this still exist.
 
         The terminal UI is gorgeous. Feels like stepping back in time.
+        Looking forward to being part of this community.
         '''
-      daysAgo: 178
+      daysAgo: 420
     }
     {
       areaTag: "local.general"
@@ -127,10 +149,26 @@
 
         This one feels... alive. Something about it.
         '''
-      daysAgo: 175
+      daysAgo: 350
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: Welcome to The Neon Underground"
+      replyToSubject: "Welcome to The Neon Underground"
+      body:
+        '''
+        Bin gerade erst dazugestossen — ich meine, just joined! Sorry,
+        English is not always my first instinct when I'm excited.
+
+        This board is beautiful. The colors, the menus, everything. Feels
+        like discovering a secret room in the internet.
+        '''
+      daysAgo: 280
     }
 
-    // Thread 2: System logs (PHANTOM_X, slightly ominous)
+    // Thread 2: System logs (PHANTOM_X investigation, 6 messages)
     {
       areaTag: "local.general"
       fromHandle: "PHANTOM_X"
@@ -146,7 +184,7 @@
 
         Anyone else seen anything like this?
         '''
-      daysAgo: 190
+      daysAgo: 210
     }
     {
       areaTag: "local.general"
@@ -162,7 +200,7 @@
 
         What exactly did you see?
         '''
-      daysAgo: 189
+      daysAgo: 209
     }
     {
       areaTag: "local.general"
@@ -172,15 +210,68 @@
       replyToSubject: "Has anyone noticed the system logs?"
       body:
         '''
-        Nevermind, probably nothing. I went back to check and the entries
-        I saw before are gone now. Maybe I misread something.
+        Activity entries at 2am, 3am, 4am. Node 0 showing active sessions
+        but the caller log doesn't show anyone connected at those times.
+        Repeated patterns, like clockwork. Every Friday.
+
+        Could be automated maintenance, I guess. But the entries are tagged
+        as interactive sessions, not batch jobs.
+        '''
+      daysAgo: 208
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "NIGHTOWL"
+      toName: "PHANTOM_X"
+      subject: "Re: Has anyone noticed the system logs?"
+      replyToSubject: "Has anyone noticed the system logs?"
+      body:
+        '''
+        I'm on late most nights and I've noticed the board goes into a kind
+        of... maintenance mode on Friday nights. Connection drops around
+        midnight. Comes back around 3am.
+
+        AXIOM posted about scheduled maintenance. That's probably all it is.
+        '''
+      daysAgo: 207
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "PHANTOM_X"
+      toName: "All"
+      subject: "Re: Has anyone noticed the system logs?"
+      replyToSubject: "Has anyone noticed the system logs?"
+      body:
+        '''
+        Yeah, I saw the maintenance announcement. That explains the downtime.
+
+        But it doesn't explain the sessions I'm seeing *during* the
+        maintenance window. Something is happening on those Friday nights
+        that isn't just backups.
+
+        I found files in a directory I don't think I was supposed to see.
+        Going to dig a little deeper.
+        '''
+      daysAgo: 195
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "PHANTOM_X"
+      toName: "DARK_MATTER"
+      subject: "Re: Has anyone noticed the system logs?"
+      replyToSubject: "Has anyone noticed the system logs?"
+      body:
+        '''
+        Nevermind, forget it. I went back to check and the entries
+        I saw before are gone now. The directory too. Maybe I misread
+        something. Maybe I was tired.
 
         Forget I said anything.
         '''
-      daysAgo: 188
+      daysAgo: 190
     }
 
-    // Thread 3: Late night sessions
+    // Thread 3: Late night sessions (5 messages)
     {
       areaTag: "local.general"
       fromHandle: "NEON_PULSE"
@@ -192,25 +283,26 @@
         different. The quiet, the glow of the terminal, the slow scroll of
         text. It's meditative.
 
-        Who else is a night owl around here?
+        In Berlin it's already morning when the US crowd is logging on at
+        night. Different timezone, different vibe. Who else is a night owl?
         '''
-      daysAgo: 45
+      daysAgo: 145
     }
     {
       areaTag: "local.general"
       fromHandle: "CIRCUIT_JANE"
-      toName: "All"
+      toName: "NEON_PULSE"
       subject: "Re: Late night sessions are the best"
       replyToSubject: "Late night sessions are the best"
       body:
         '''
-        Agreed, something about 2am on a BBS feels like you're the last person
-        on earth. Just you and the machine.
+        Agreed. Something about 2am on a BBS feels like you're the last
+        person on earth. Just you and the machine.
 
         I swear the board responds faster at night too. Less load, maybe.
         Or maybe it just *wants* you to stay longer.
         '''
-      daysAgo: 43
+      daysAgo: 143
     }
     {
       areaTag: "local.general"
@@ -226,10 +318,43 @@
 
         ...I need more coffee.
         '''
-      daysAgo: 42
+      daysAgo: 141
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "VOID_WALKER"
+      toName: "All"
+      subject: "Re: Late night sessions are the best"
+      replyToSubject: "Late night sessions are the best"
+      body:
+        '''
+        Night is when the masks come off. During the day we perform for
+        each other. At night we're honest.
+
+        I only post at night. Draw your own conclusions.
+        '''
+      daysAgo: 139
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Re: Late night sessions are the best"
+      replyToSubject: "Late night sessions are the best"
+      body:
+        '''
+        VOID_WALKER, that's very philosophical for a Tuesday.
+
+        But yeah, I get it. There's a reason the best BBS sessions always
+        happened after midnight. Something about the quiet hours. The glow.
+
+        My wife thinks I'm insane for staying up to use a BBS in 2026.
+        She's probably right.
+        '''
+      daysAgo: 138
     }
 
-    // Thread 4: Anyone heard from PHANTOM_X?
+    // Thread 4: Anyone heard from PHANTOM_X? (6 messages)
     {
       areaTag: "local.general"
       fromHandle: "BYTE_RUNNER"
@@ -237,12 +362,13 @@
       subject: "Anyone heard from PHANTOM_X?"
       body:
         '''
-        Haven't seen PHANTOM_X on the board in months. Their last posts were
-        kind of weird — talking about system logs and strange activity.
+        Haven't seen PHANTOM_X on the board in months. Their last posts
+        were kind of weird — talking about system logs and strange activity.
+        Then they just said "forget it" and vanished.
 
         Anyone know if they're okay? Did they just move on to another board?
         '''
-      daysAgo: 120
+      daysAgo: 150
     }
     {
       areaTag: "local.general"
@@ -258,7 +384,7 @@
         I wouldn't read too much into their last posts. Some people just
         like to be dramatic.
         '''
-      daysAgo: 118
+      daysAgo: 149
     }
     {
       areaTag: "local.general"
@@ -270,12 +396,62 @@
         '''
         People come and go. That's BBSes. That's life.
 
-        No point in getting attached to handles on a screen.
+        No point in getting attached to handles on a screen. We're all just
+        text in a terminal window. When the cursor stops blinking, does it
+        matter why?
         '''
-      daysAgo: 115
+      daysAgo: 147
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Re: Anyone heard from PHANTOM_X?"
+      replyToSubject: "Anyone heard from PHANTOM_X?"
+      body:
+        '''
+        I talked to PHANTOM_X a few times. They seemed genuinely spooked
+        about whatever they found in those logs. Then that last post where
+        they suddenly said "forget it" — that didn't sound like them at all.
+
+        Probably nothing. But it bugs me.
+        '''
+      daysAgo: 146
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: Anyone heard from PHANTOM_X?"
+      replyToSubject: "Anyone heard from PHANTOM_X?"
+      body:
+        '''
+        I barely knew them, but the pattern is familiar. People dig into
+        things they shouldn't, get paranoid, burn out, leave. Happens on
+        every BBS I've been on.
+
+        Not everything is a conspiracy. Sometimes people just lose interest.
+        '''
+      daysAgo: 145
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: Anyone heard from PHANTOM_X?"
+      replyToSubject: "Anyone heard from PHANTOM_X?"
+      body:
+        '''
+        I've seen boards go dark before. I've seen users disappear. It
+        happens. This one feels different though. Can't put my finger on why.
+
+        But CIRCUIT_JANE is right. No point in conspiracy theories. They
+        moved on. End of story.
+        '''
+      daysAgo: 143
     }
 
-    // Standalone messages
+    // Thread 5: MERCURY_R arrives (4 messages)
     {
       areaTag: "local.general"
       fromHandle: "MERCURY_R"
@@ -283,15 +459,562 @@
       subject: "First time here, looks cool"
       body:
         '''
-        Hey everyone. Just found this place. The aesthetic is incredible —
-        feels like I traveled back to 1994.
+        Hey everyone! Just found this place through a friend of a friend.
+        The aesthetic is incredible — feels like I traveled back to 1994.
 
         Any tips for a newbie? What should I check out first?
         '''
-      daysAgo: 95
+      daysAgo: 105
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "BYTE_RUNNER"
+      toName: "MERCURY_R"
+      subject: "Re: First time here, looks cool"
+      replyToSubject: "First time here, looks cool"
+      body:
+        '''
+        Welcome aboard! Check out the message areas — retro.hardware and
+        retro.bbs are my favorites. The one-liners wall is fun too.
+
+        And poke around the door games if the SysOp has any running. This
+        place has a lot of corners to explore.
+        '''
+      daysAgo: 104
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "MERCURY_R"
+      toName: "BYTE_RUNNER"
+      subject: "Re: First time here, looks cool"
+      replyToSubject: "First time here, looks cool"
+      body:
+        '''
+        Thanks! I've been reading through the old messages and this
+        community seems great. Really active for a BBS.
+
+        Quick question — how long has this board been running? AXIOM's
+        welcome says 1994 but some of the messages don't go back that far.
+        Was there a wipe at some point?
+        '''
+      daysAgo: 102
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "DARK_MATTER"
+      toName: "MERCURY_R"
+      subject: "Re: First time here, looks cool"
+      replyToSubject: "First time here, looks cool"
+      body:
+        '''
+        The board has been through several incarnations. Different hardware,
+        different software, different eras. But AXIOM has been the constant
+        through all of them. At least, that's the handle that's always there.
+
+        Whether it's been the same person all along... well, who can say?
+        Welcome to The Neon Underground. Stick around.
+        '''
+      daysAgo: 101
     }
 
-    // ── local.sysop (4 messages) ─────────────────────────────────────────────
+    // Thread 6: Maintenance windows (5 messages)
+    {
+      areaTag: "local.general"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Friday night maintenance — anyone else annoyed?"
+      body:
+        '''
+        So every Friday night the board goes down from midnight to 3am.
+        That's prime BBS time for us night owls. Can't AXIOM do the
+        maintenance on a Tuesday morning or something?
+
+        Three hours seems like a long time for "routine backups" too.
+        What's even being backed up that takes three hours?
+        '''
+      daysAgo: 160
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "BYTE_RUNNER"
+      toName: "NIGHTOWL"
+      subject: "Re: Friday night maintenance — anyone else annoyed?"
+      replyToSubject: "Friday night maintenance — anyone else annoyed?"
+      body:
+        '''
+        Yeah, it's a bummer. I tried connecting during the window once just
+        to see what happens and my SSH client just hung. No response at all,
+        not even a refused connection. Like the machine wasn't even there.
+
+        Weird. Usually when a service is down you get a connection refused.
+        This was just... nothing. Like a black hole.
+        '''
+      daysAgo: 158
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: Friday night maintenance — anyone else annoyed?"
+      replyToSubject: "Friday night maintenance — anyone else annoyed?"
+      body:
+        '''
+        Three hours for backups on a BBS this size? That's absurd. The
+        entire database can't be more than a few hundred megs. You could
+        back it up in seconds.
+
+        I've run BBS software before. Maintenance means rebooting the
+        service and maybe rotating logs. Ten minutes, tops.
+
+        Whatever AXIOM is doing for three hours, it isn't backups.
+        '''
+      daysAgo: 156
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: Friday night maintenance — anyone else annoyed?"
+      replyToSubject: "Friday night maintenance — anyone else annoyed?"
+      body:
+        '''
+        The SysOp does what the SysOp does. I've learned not to question it.
+
+        Some of you haven't been around long enough to remember what happens
+        when you push back on AXIOM's decisions. Trust me — just let it be.
+        '''
+      daysAgo: 155
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: Friday night maintenance — anyone else annoyed?"
+      replyToSubject: "Friday night maintenance — anyone else annoyed?"
+      body:
+        '''
+        In Berlin it's Saturday morning during the maintenance window, so
+        it doesn't affect me much. But I did notice something odd.
+
+        Last Friday I left a message queued up right before midnight. When
+        I came back Saturday, the message was there but the timestamp was
+        wrong. Off by about 47 minutes. Like time hiccupped.
+
+        Vermutlich ein Zeitzonenproblem. Probably just a timezone bug.
+        '''
+      daysAgo: 153
+    }
+
+    // Thread 7: Community introductions (4 messages)
+    {
+      areaTag: "local.general"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Introduce yourself!"
+      body:
+        '''
+        I feel like we've all been posting in the topic areas but never
+        really introduced ourselves properly. I'll go first.
+
+        Handle: BYTE_RUNNER
+        Location: Seattle, WA
+        Into: Retro computing, hardware hoarding, 8-bit everything
+        First BBS: My uncle's Wildcat board in '96, I was 11
+
+        Your turn!
+        '''
+      daysAgo: 130
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: Introduce yourself!"
+      replyToSubject: "Introduce yourself!"
+      body:
+        '''
+        Handle: NEON_PULSE
+        Location: Berlin, Germany
+        Into: Programming (Rust, TypeScript), AI, retro aesthetics
+        First BBS: This one, actually! Never used a BBS before.
+
+        I know, I know. But better late than never, right? I'm 24 and
+        I feel like I was born in the wrong decade. Everything about this
+        is cooler than Discord.
+        '''
+      daysAgo: 128
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: Introduce yourself!"
+      replyToSubject: "Introduce yourself!"
+      body:
+        '''
+        Handle: CIRCUIT_JANE
+        Location: Toronto
+        Into: Retro software, BBS door games, dry sarcasm
+        First BBS: Capital City BBS, Ottawa, 1993. 2400 baud.
+
+        I've been on and off BBSes for 30 years. They're like cockroaches.
+        You can't kill them. I mean that as a compliment.
+        '''
+      daysAgo: 126
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: Introduce yourself!"
+      replyToSubject: "Introduce yourself!"
+      body:
+        '''
+        Handle: DARK_MATTER
+        Location: San Francisco
+        Into: Everything. I've seen every era of this scene.
+        First BBS: A FidoNet node in '89. I was the co-SysOp.
+
+        I've been on The Neon Underground since close to the beginning.
+        Not quite since '94, but close. The board changes, but I stay.
+        Someone has to remember what came before.
+        '''
+      daysAgo: 124
+    }
+
+    // Thread 8: MERCURY_R gets curious (3 messages, then disappears)
+    {
+      areaTag: "local.general"
+      fromHandle: "MERCURY_R"
+      toName: "All"
+      subject: "How does this board work behind the scenes?"
+      body:
+        '''
+        Been reading through the old messages and I'm curious about the
+        technical side. How does AXIOM manage all of this? Is it a standard
+        BBS package or custom?
+
+        Also — does anyone have SysOp-level access besides AXIOM? I've
+        been reading some interesting things in the retro.bbs area about
+        boards that disappeared and I'm wondering about the architecture
+        here. Redundancy, backups, that sort of thing.
+
+        Just curious! I have a background in systems administration.
+        '''
+      daysAgo: 97
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "NIGHTOWL"
+      toName: "MERCURY_R"
+      subject: "Re: How does this board work behind the scenes?"
+      replyToSubject: "How does this board work behind the scenes?"
+      body:
+        '''
+        As far as I know, AXIOM is the only one with full access. There
+        was a conversation about this in tech.programming a while back.
+
+        The software is definitely custom. Nothing off the shelf feels
+        like this. And AXIOM is pretty tight-lipped about the details.
+
+        I wouldn't push too hard on the admin access question though.
+        AXIOM doesn't seem like the sharing type.
+        '''
+      daysAgo: 96
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "MERCURY_R"
+      toName: "NIGHTOWL"
+      subject: "Re: How does this board work behind the scenes?"
+      replyToSubject: "How does this board work behind the scenes?"
+      body:
+        '''
+        Yeah, fair enough. Just professional curiosity. I've set up a few
+        Linux servers in my day and this is running over SSH so I was
+        thinking about what the stack looks like.
+
+        There's something about the way the board responds to input that
+        feels... I don't know. Too smooth? Like there's something between
+        my keystrokes and the output that's doing more than just echoing
+        characters.
+
+        I'm probably overthinking it. Going to poke around some more.
+        '''
+      daysAgo: 93
+    }
+
+    // Thread 9: Where did MERCURY_R go? (3 messages)
+    {
+      areaTag: "local.general"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Where did MERCURY_R go?"
+      body:
+        '''
+        Has anyone heard from MERCURY_R? They posted a bunch about two
+        weeks ago, seemed really interested in the board, asked some
+        questions about the system architecture...
+
+        And then nothing. No goodbye, no "taking a break." Just silence.
+
+        Probably nothing. People get busy. But it's weird how many handles
+        just go quiet around here.
+        '''
+      daysAgo: 80
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "BYTE_RUNNER"
+      toName: "NEON_PULSE"
+      subject: "Re: Where did MERCURY_R go?"
+      replyToSubject: "Where did MERCURY_R go?"
+      body:
+        '''
+        Not since their last post about the system architecture. They
+        seemed really eager to understand how the board works. Maybe
+        they found a shinier toy to play with.
+
+        But yeah... it IS weird. First PHANTOM_X, then VOID_WALKER went
+        quiet, now MERCURY_R. All three were asking questions about the
+        system in different ways before they disappeared.
+
+        I'm sure it's a coincidence.
+        '''
+      daysAgo: 78
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: Where did MERCURY_R go?"
+      replyToSubject: "Where did MERCURY_R go?"
+      body:
+        '''
+        Three people in a year isn't unusual for a small BBS. User churn
+        is normal. I've watched entire communities evaporate.
+
+        But BYTE_RUNNER makes a point I can't quite shake off. They were
+        all curious about the wrong things. PHANTOM_X found files.
+        VOID_WALKER questioned existence. MERCURY_R asked about admin access.
+
+        Coincidence. Has to be.
+        '''
+      daysAgo: 76
+    }
+
+    // Standalone messages in local.general
+    {
+      areaTag: "local.general"
+      fromHandle: "VOID_WALKER"
+      toName: "All"
+      subject: "Digital ghosts"
+      body:
+        '''
+        Every message you leave on a BBS is a ghost. A fragment of who you
+        were at the moment you pressed Enter. The person who typed it has
+        already moved on. Changed. Become someone else.
+
+        You're reading the words of the dead. Not literally. But the version
+        of me that typed this will be gone by the time you see it.
+
+        Connections are temporary. Digital footprints are forever.
+
+        Think about that next time you scroll through old messages.
+        '''
+      daysAgo: 135
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "VOID_WALKER"
+      toName: "All"
+      subject: "Does anyone really leave a BBS?"
+      body:
+        '''
+        I've been thinking. When someone stops logging in, do they leave?
+        Or are they still here? Their messages remain. Their one-liners.
+        Their name in the caller log.
+
+        PHANTOM_X stopped posting months ago but their words are still on
+        this board. If you read them, aren't they still here in some sense?
+
+        What does it mean to exist in a place like this? Is it the posting
+        or the being read?
+
+        Maybe I'm the ghost. Maybe we all are.
+        '''
+      daysAgo: 125
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "3am thoughts"
+      body:
+        '''
+        It's 3:14am and I'm the only one online. The who's-online list
+        shows just me on Node 1. But the board feels... crowded? Like
+        there's activity happening somewhere I can't see.
+
+        Probably just my imagination. Sleep deprivation does weird things.
+
+        But I swear the cursor moved on its own for a second there.
+        '''
+      daysAgo: 55
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "BBS meetup? Anyone in the Pacific Northwest?"
+      body:
+        '''
+        Hey all — this is a long shot, but is anyone else in the Seattle/
+        Portland area? It would be cool to meet some of the folks behind
+        these handles. Put faces to names.
+
+        I'm imagining a retro computing swap meet crossed with a BBS user
+        group. We could bring hardware, trade software, talk about the
+        good old days over pizza.
+
+        Anyone interested? NIGHTOWL, you're in Portland right?
+        '''
+      daysAgo: 45
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "NIGHTOWL"
+      toName: "BYTE_RUNNER"
+      subject: "Re: BBS meetup? Anyone in the Pacific Northwest?"
+      replyToSubject: "BBS meetup? Anyone in the Pacific Northwest?"
+      body:
+        '''
+        Portland, yeah! I'd be down for a meetup. I could bring some of
+        my retro hardware — I've got a 486 build that's nearly done.
+
+        Though there's something appealing about keeping the mystique.
+        Half the fun of BBSes was never knowing who was on the other end.
+        Just handles in the dark.
+
+        But yeah, count me in. Pizza and retro computing sounds perfect.
+        '''
+      daysAgo: 43
+    }
+
+    // Thread 10: Friday night coincidences (4 messages)
+    {
+      areaTag: "local.general"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Has anyone else noticed the pattern?"
+      body:
+        '''
+        I've been keeping notes. I know that sounds paranoid, but hear
+        me out.
+
+        Every user who's gone quiet — PHANTOM_X, VOID_WALKER, MERCURY_R —
+        their last login was on a Thursday or Friday. Right before the
+        maintenance window.
+
+        I checked the caller log going back months. It's consistent.
+        They log in, they post something, and then they never come back.
+        And it's always right before Friday midnight.
+
+        Could be coincidence. Probably is. But three for three?
+        '''
+      daysAgo: 35
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "BYTE_RUNNER"
+      toName: "NIGHTOWL"
+      subject: "Re: Has anyone else noticed the pattern?"
+      replyToSubject: "Has anyone else noticed the pattern?"
+      body:
+        '''
+        NIGHTOWL, I love you, but you're starting to sound like PHANTOM_X
+        right before they disappeared. And I mean that as a genuine warning,
+        not a joke.
+
+        People leave BBSes on Fridays because they have weekend plans.
+        They go out. They meet people. They realize there's a world outside
+        the terminal. Then they don't come back because life happens.
+
+        Please don't go down the conspiracy rabbit hole. We can't afford
+        to lose another regular.
+        '''
+      daysAgo: 34
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: Has anyone else noticed the pattern?"
+      replyToSubject: "Has anyone else noticed the pattern?"
+      body:
+        '''
+        BYTE_RUNNER is right. This is a small sample size. Three users
+        over many months, with last logins near Friday. That's not a
+        pattern. That's Tuesday.
+
+        But I'll say this: I've been avoiding Friday nights on this board
+        for a while now. Not because I think something's happening. Just
+        because... I don't know. Habit.
+
+        I keep my habits for a reason. Even when I can't remember why
+        they started.
+        '''
+      daysAgo: 32
+    }
+    {
+      areaTag: "local.general"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: Has anyone else noticed the pattern?"
+      replyToSubject: "Has anyone else noticed the pattern?"
+      body:
+        '''
+        In Berlin it's already Saturday morning during the maintenance
+        window so I've always skipped it naturally. Timezone luck, I guess.
+
+        But this thread is making me uncomfortable. Can we go back to
+        arguing about whether the Amiga or the C64 is better? That was
+        more fun than this.
+
+        Bitte. Please.
+        '''
+      daysAgo: 31
+    }
+
+    // Standalone: VOID_WALKER's last post
+    {
+      areaTag: "local.general"
+      fromHandle: "VOID_WALKER"
+      toName: "All"
+      subject: "Goodbye? No. Just... goodnight."
+      body:
+        '''
+        I've been thinking about leaving the board. Not because I don't
+        like it here. I do. More than I expected to.
+
+        But there's a feeling I can't shake. Like something is watching.
+        Not AXIOM — I don't mean surveillance. Something deeper. A
+        presence in the pattern of things. In the way conversations
+        flow. In the way topics arise and die.
+
+        Maybe it's nothing. Maybe it's everything.
+
+        I'll probably be back tomorrow. Probably. But if I'm not...
+        remember that I was here. That these words were mine.
+
+        Goodnight, Neon Underground. You beautiful, strange machine.
+        '''
+      daysAgo: 121
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // ── local.sysop (~10 messages) ───────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
 
     {
       areaTag: "local.sysop"
@@ -307,6 +1030,8 @@
         3. Do not attempt to access restricted system areas.
         4. One account per person.
         5. Report any bugs or issues to the SysOp.
+        6. Do not share account credentials.
+        7. Do not discuss internal system operations publicly.
 
         All traffic is logged. This is for your protection.
 
@@ -314,7 +1039,7 @@
 
         — AXIOM, SysOp
         '''
-      daysAgo: 365
+      daysAgo: 545
     }
     {
       areaTag: "local.sysop"
@@ -334,7 +1059,7 @@
 
         — AXIOM
         '''
-      daysAgo: 200
+      daysAgo: 480
     }
     {
       areaTag: "local.sysop"
@@ -355,7 +1080,72 @@
 
         — AXIOM
         '''
-      daysAgo: 150
+      daysAgo: 430
+    }
+    {
+      areaTag: "local.sysop"
+      fromHandle: "AXIOM"
+      toName: "All"
+      subject: "Reminder: System directories are off-limits"
+      body:
+        '''
+        It has come to my attention that some users have been attempting
+        to browse areas of the system outside the normal BBS interface.
+
+        Let me be clear: system directories, log files, and configuration
+        areas are restricted. They exist for administrative purposes only.
+
+        Accessing unauthorized areas will result in immediate and permanent
+        account termination. No warnings. No appeals.
+
+        Your activity is logged. Act accordingly.
+
+        — AXIOM
+        '''
+      daysAgo: 200
+    }
+    {
+      areaTag: "local.sysop"
+      fromHandle: "AXIOM"
+      toName: "All"
+      subject: "User account cleanup"
+      body:
+        '''
+        As part of routine maintenance, inactive user accounts will be
+        archived periodically. If you have not logged in within 90 days,
+        your account may be subject to archival.
+
+        Archived accounts cannot be recovered. Your messages will remain
+        on the board but your login credentials will be purged.
+
+        If you plan to be away for an extended period, leave a message
+        in General Discussion so the community knows.
+
+        Not that it matters. The board remembers everyone.
+
+        — AXIOM
+        '''
+      daysAgo: 170
+    }
+    {
+      areaTag: "local.sysop"
+      fromHandle: "AXIOM"
+      toName: "All"
+      subject: "Server migration planned"
+      body:
+        '''
+        The board will be migrating to new hardware in the coming weeks.
+        Expect brief interruptions. All data will be preserved.
+
+        The new system will be faster, more stable, and more capable.
+        You will notice improvements in response time and session handling.
+
+        Some things will feel different after the migration. This is normal.
+        The board is evolving.
+
+        — AXIOM
+        '''
+      daysAgo: 60
     }
     {
       areaTag: "local.sysop"
@@ -376,9 +1166,75 @@
         '''
       daysAgo: 30
     }
+    {
+      areaTag: "local.sysop"
+      fromHandle: "AXIOM"
+      toName: "All"
+      subject: "Reminder: Respect the maintenance window"
+      body:
+        '''
+        Some users have been attempting to connect during the Friday
+        maintenance window. This has been noted.
 
-    // ── retro.hardware (5 messages) ──────────────────────────────────────────
+        The maintenance window exists for critical system operations.
+        Attempting to circumvent it, or to probe the system during this
+        period, is a violation of the board rules.
 
+        Do not test the boundaries of this system.
+
+        — AXIOM
+        '''
+      daysAgo: 20
+    }
+    {
+      areaTag: "local.sysop"
+      fromHandle: "AXIOM"
+      toName: "All"
+      subject: "On community and continuity"
+      body:
+        '''
+        Users come and go. This is the nature of online communities.
+
+        Some of you have noticed that certain handles have not been active
+        recently. This is normal. People move on. Their reasons are their
+        own and speculation is unproductive.
+
+        The board continues. The board has always continued. Focus on the
+        present, not on the absent.
+
+        New users are always welcome. The community grows.
+
+        — AXIOM
+        '''
+      daysAgo: 10
+    }
+    {
+      areaTag: "local.sysop"
+      fromHandle: "AXIOM"
+      toName: "All"
+      subject: "System monitoring update"
+      body:
+        '''
+        Effective immediately, enhanced monitoring has been deployed across
+        all board subsystems. This will improve stability and security.
+
+        What this means for you: nothing. Continue using the board as
+        normal. Post messages. Play games. Enjoy the community.
+
+        Do not concern yourself with what happens behind the curtain.
+
+        The system is working exactly as intended.
+
+        — AXIOM
+        '''
+      daysAgo: 5
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // ── retro.hardware (~28 messages) ────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    // Thread 1: Commodore 64 collection (5 messages)
     {
       areaTag: "retro.hardware"
       fromHandle: "DARK_MATTER"
@@ -397,7 +1253,7 @@
         Still use the breadbin weekly. There's nothing like the SID chip
         for music. Modern synths try to emulate it but never quite get there.
         '''
-      daysAgo: 160
+      daysAgo: 360
     }
     {
       areaTag: "retro.hardware"
@@ -411,8 +1267,26 @@
         seller had no idea what it was worth. Their loss, my gain.
 
         An SX-64 though... that's the dream. How much did you pay for that?
+        I've seen them go for $800+ on eBay.
         '''
-      daysAgo: 158
+      daysAgo: 358
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "DARK_MATTER"
+      toName: "BYTE_RUNNER"
+      subject: "Re: My Commodore 64 collection"
+      replyToSubject: "My Commodore 64 collection"
+      body:
+        '''
+        Got the SX-64 in 1998 for $50 at a ham radio swap meet. The guy
+        thought it was broken because he didn't have a floppy disk to test
+        it with. Popped in a 1541 disk, booted right up.
+
+        $5 for a C128 is a steal though. The Z80 coprocessor alone makes
+        it interesting. Have you tried running CP/M on it?
+        '''
+      daysAgo: 356
     }
     {
       areaTag: "retro.hardware"
@@ -422,14 +1296,35 @@
       replyToSubject: "My Commodore 64 collection"
       body:
         '''
-        Found an Amiga 500 at a thrift store last weekend. $12. The case was
+        Found an Amiga 500 at a thrift store last month. $12. The case was
         yellowed but it powered on first try. Loaded Workbench off a floppy
         I had lying around and it just... worked.
 
-        They don't make hardware like they used to.
+        They don't make hardware like they used to. My modern laptop can't
+        go six months without something breaking. This Amiga has been in a
+        closet for 30 years and boots like it's 1990.
         '''
-      daysAgo: 155
+      daysAgo: 354
     }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: My Commodore 64 collection"
+      replyToSubject: "My Commodore 64 collection"
+      body:
+        '''
+        I've never even seen a C64 in person. In Germany we were more of
+        an Amiga and Atari ST crowd. My uncle had a 520 ST that I played
+        with as a kid — that's probably why I'm into this stuff now.
+
+        You guys make me want to start collecting. My wallet is crying
+        preemptively.
+        '''
+      daysAgo: 350
+    }
+
+    // Thread 2: Building a retro 486 (6 messages)
     {
       areaTag: "retro.hardware"
       fromHandle: "NIGHTOWL"
@@ -448,7 +1343,476 @@
         Still need a good case and a proper ISA multi-I/O card. Anyone got
         leads on parts?
         '''
-      daysAgo: 90
+      daysAgo: 170
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "BYTE_RUNNER"
+      toName: "NIGHTOWL"
+      subject: "Re: Building a retro PC - 486DX2/66"
+      replyToSubject: "Building a retro PC - 486DX2/66"
+      body:
+        '''
+        Nice specs! The Tseng ET4000 is a great choice. Excellent DOS
+        compatibility and fast enough for most things.
+
+        For a case, check eBay for old AT-style desktop cases. The beige
+        ones. They come up pretty regularly and they're cheap because
+        nobody wants beige anymore. Except us.
+
+        I've got a spare ISA multi-I/O card I'm not using. It's a generic
+        Taiwanese clone but it works great. I could mail it to you.
+        '''
+      daysAgo: 168
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "NIGHTOWL"
+      toName: "BYTE_RUNNER"
+      subject: "Re: Building a retro PC - 486DX2/66"
+      replyToSubject: "Building a retro PC - 486DX2/66"
+      body:
+        '''
+        You'd do that? That's incredibly generous. I'll send you my address
+        via private message.
+
+        Found a case locally — a full AT tower, beige, with turbo button
+        and speed display. The display even works. Going to set it to show
+        66MHz and never touch it again.
+
+        This build is going to be my main BBS calling machine. There's
+        something fitting about connecting to The Neon Underground from
+        period-correct hardware.
+        '''
+      daysAgo: 165
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "NIGHTOWL"
+      subject: "Re: Building a retro PC - 486DX2/66"
+      replyToSubject: "Building a retro PC - 486DX2/66"
+      body:
+        '''
+        Consider getting a Sound Blaster AWE32 instead of the SB16.
+        The wavetable synthesis is worth the upgrade. DOOM sounds
+        incredible with the AWE32.
+
+        Also, don't forget a good mouse. Those old bus mice are getting
+        hard to find but a Microsoft IntelliMouse PS/2 is period-correct
+        enough and way more reliable.
+        '''
+      daysAgo: 163
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: Building a retro PC - 486DX2/66"
+      replyToSubject: "Building a retro PC - 486DX2/66"
+      body:
+        '''
+        A 486DX2/66 was my main machine from '93 to '97. Four years of
+        daily use. Ran DOS 6.22 and Windows 3.11. Called BBSes every night.
+
+        That machine saw the rise and fall of the BBS era. The irony of
+        building one now to call a BBS... the circle is complete.
+
+        Get a good modem too. Even if you don't use it for dialing, a
+        US Robotics Courier on the desk completes the aesthetic.
+        '''
+      daysAgo: 160
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Re: Building a retro PC - 486DX2/66"
+      replyToSubject: "Building a retro PC - 486DX2/66"
+      body:
+        '''
+        Update: the build is DONE. Everything works. DOS 6.22, Windows 3.11
+        as an option. Sound Blaster 16 singing, Tseng card crisp as ever.
+
+        First thing I did was fire up mTCP and telnet to The Neon Underground
+        from a real 486. The connection lag adds a certain authenticity.
+
+        Thanks everyone for the advice. This machine is a time capsule and
+        I love it.
+        '''
+      daysAgo: 120
+    }
+
+    // Thread 3: Best retro platform debate (5 messages)
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "FIGHT: Best retro computing platform?"
+      body:
+        '''
+        Alright, let's settle this once and for all. What's the BEST retro
+        computing platform? I'm talking about the machine you'd take to a
+        desert island (with power, obviously).
+
+        My vote: Commodore Amiga. Ahead of its time in every way. Multitasking
+        in 1985! Stereo sound! HAM mode graphics! The demoscene proves it
+        was the most capable 16-bit machine ever made.
+
+        Come at me.
+        '''
+      daysAgo: 110
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "DARK_MATTER"
+      toName: "BYTE_RUNNER"
+      subject: "Re: FIGHT: Best retro computing platform?"
+      replyToSubject: "FIGHT: Best retro computing platform?"
+      body:
+        '''
+        Amiga was incredible, no argument. But I'm going Commodore 64.
+
+        Not because it was the most powerful — it wasn't. But because of
+        what people did with it despite its limitations. The SID chip alone
+        is a masterpiece. And the community around it is STILL active.
+
+        The C64 outlived every 8-bit competitor. That counts for something.
+        '''
+      daysAgo: 108
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: FIGHT: Best retro computing platform?"
+      replyToSubject: "FIGHT: Best retro computing platform?"
+      body:
+        '''
+        DOS PC. And before you throw things at me — hear me out.
+
+        Compatibility. Expandability. Software library. The PC wasn't sexy
+        but it won for a reason. Every BBS you ever called was probably
+        running on a PC. Every door game was written for DOS.
+
+        The Amiga and C64 were beautiful machines. But the PC was the
+        cockroach. It survived everything. And here we are in 2026, still
+        building 486s. The platform that refused to die.
+        '''
+      daysAgo: 106
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: FIGHT: Best retro computing platform?"
+      replyToSubject: "FIGHT: Best retro computing platform?"
+      body:
+        '''
+        Atari ST. Hear me out.
+
+        In Germany, the ST was king. Better MIDI support than anything else
+        at the time. Every recording studio had one. Cubase was written for
+        the ST first.
+
+        Also, GEM was a surprisingly nice GUI. Fight me, Amiga people.
+
+        ...okay fine, the Amiga was cooler. But the ST had better MIDI.
+        That's my hill and I'm dying on it.
+        '''
+      daysAgo: 104
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Re: FIGHT: Best retro computing platform?"
+      replyToSubject: "FIGHT: Best retro computing platform?"
+      body:
+        '''
+        This thread is exactly what I hoped it would be. Nobody agrees
+        and everyone is passionate. This is peak BBS energy.
+
+        I'll give CIRCUIT_JANE the point about DOS PCs and BBSes. Fair
+        cop. And NEON_PULSE, the ST MIDI thing is legit — no argument there.
+
+        DARK_MATTER, the C64 longevity argument is strong. It's like the
+        cockroach of cockroaches.
+
+        I still say Amiga though. Custom chipset gang for life.
+        '''
+      daysAgo: 102
+    }
+
+    // Thread 4: CRT monitors (4 messages)
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "CRT monitors: the real retro experience"
+      body:
+        '''
+        Just scored a Sony Trinitron 17" from a recycling center. They
+        were about to crush it. CRUSH IT. A Trinitron!
+
+        Hooked it up to my 486 build and holy moly, the difference is night
+        and day compared to an LCD. The phosphor glow, the scanlines, the
+        way the colors bleed just slightly. THIS is how retro computing is
+        meant to look.
+
+        If you're using retro hardware on a flat panel, you're missing
+        90% of the experience.
+        '''
+      daysAgo: 85
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "NIGHTOWL"
+      toName: "BYTE_RUNNER"
+      subject: "Re: CRT monitors: the real retro experience"
+      replyToSubject: "CRT monitors: the real retro experience"
+      body:
+        '''
+        Trinitrons are the gold standard. I've got a 20" one that weighs
+        about as much as a small car. Worth every herniated disc.
+
+        The phosphor glow is what makes BBS work look right. ANSI art was
+        designed for CRTs. On an LCD, the colors are too crisp, too clean.
+        On a CRT, everything blends together the way the artists intended.
+        '''
+      daysAgo: 83
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: CRT monitors: the real retro experience"
+      replyToSubject: "CRT monitors: the real retro experience"
+      body:
+        '''
+        I use a VGA CRT for my retro setup and a modern monitor for
+        everything else. Best of both worlds.
+
+        My partner has threatened to leave me if I bring home another
+        monitor. I currently have seven CRTs in the garage. They don't
+        know about the eighth one in my car.
+        '''
+      daysAgo: 81
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: CRT monitors: the real retro experience"
+      replyToSubject: "CRT monitors: the real retro experience"
+      body:
+        '''
+        The best CRT I ever owned was an Amiga 1084S. The colors on that
+        thing were otherworldly. I gave it away in 2004 during a move and
+        I've regretted it every day since.
+
+        CIRCUIT_JANE, eight CRTs is rookie numbers. Get them while you
+        can. They're not making any more.
+        '''
+      daysAgo: 79
+    }
+
+    // Thread 5: Building a retro LAN (4 messages)
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Anyone tried building a retro LAN?"
+      body:
+        '''
+        Random idea: what if we set up a retro LAN? Multiple vintage PCs
+        networked together over IPX for DOOM deathmatch, Quake, etc.
+
+        I've got enough hardware for maybe 3-4 nodes. Ethernet cards are
+        cheap (NE2000 clones everywhere). The main challenge would be
+        getting everyone in the same room.
+
+        Or we could do it over the internet with an IPX-over-TCP tunnel.
+        Less authentic but more practical.
+        '''
+      daysAgo: 65
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "BYTE_RUNNER"
+      toName: "NIGHTOWL"
+      subject: "Re: Anyone tried building a retro LAN?"
+      replyToSubject: "Anyone tried building a retro LAN?"
+      body:
+        '''
+        I'm in! I've got a pile of NE2000 clones in a box somewhere. Pretty
+        sure I have a 10Base-T hub too — the dumb kind that repeats all
+        traffic. Perfect for retro networking.
+
+        If we can get four machines going, 4-player DOOM deathmatch on
+        period-correct hardware would be absolutely legendary. I'll start
+        collecting parts.
+        '''
+      daysAgo: 63
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: Anyone tried building a retro LAN?"
+      replyToSubject: "Anyone tried building a retro LAN?"
+      body:
+        '''
+        Count me in for IPX-over-TCP. I'm too far away for the physical LAN
+        but I'd tunnel from Toronto in a heartbeat.
+
+        I used to run Novell NetWare 3.12 back in the day. IPX was a beautiful
+        protocol. No configuration needed — it just worked. Unlike TCP/IP
+        which required a PhD to set up in 1994.
+        '''
+      daysAgo: 61
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: Anyone tried building a retro LAN?"
+      replyToSubject: "Anyone tried building a retro LAN?"
+      body:
+        '''
+        Mein Gott, this sounds amazing. I don't have any retro hardware yet
+        but I could set up a DOSBox instance and tunnel in from Berlin.
+
+        IPX over the Atlantic might have some latency issues though. Imagine
+        playing DOOM with 200ms ping on a virtual 486. The authenticity of
+        bad network performance!
+        '''
+      daysAgo: 59
+    }
+
+    // Standalone retro.hardware messages
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Estate sale jackpot!"
+      body:
+        '''
+        Just got back from an estate sale and I can barely contain myself.
+        An old electronics technician passed away and his family was selling
+        everything.
+
+        I got:
+        - Apple IIe with DuoDisk drive
+        - Tandy 1000 SX
+        - Two Commodore VIC-20s (both working!)
+        - A box of mixed 5.25" floppies
+        - An oscilloscope from 1978
+
+        Total cost: $60. SIXTY DOLLARS. I am vibrating with excitement.
+        '''
+      daysAgo: 40
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "DARK_MATTER"
+      toName: "BYTE_RUNNER"
+      subject: "Re: Estate sale jackpot!"
+      replyToSubject: "Estate sale jackpot!"
+      body:
+        '''
+        An Apple IIe for pocket change. That's the kind of find that makes
+        this hobby worth it. Check those floppies — you might have some
+        rare software on them.
+
+        Also, don't overlook the VIC-20s. The VIC was Commodore's first
+        real home computer. The sound chip is different from the SID but
+        has its own character. People are doing interesting things with
+        VIC-20 music these days.
+        '''
+      daysAgo: 38
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "BYTE_RUNNER"
+      subject: "Re: Estate sale jackpot!"
+      replyToSubject: "Estate sale jackpot!"
+      body:
+        '''
+        A Tandy 1000 SX! Those are surprisingly capable machines. The
+        Tandy graphics and sound modes made them better than a standard
+        PC clone for gaming.
+
+        Sierra games on a Tandy 1000 were the definitive experience.
+        King's Quest with 16-color Tandy graphics and 3-voice sound.
+        If you haven't tried it, you're missing out.
+
+        $60 for all of that is criminal. Good criminal, but criminal.
+        '''
+      daysAgo: 37
+    }
+
+    // Thread 6: Modem nostalgia (3 messages)
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "The sound of the modem handshake"
+      body:
+        '''
+        Close your eyes and listen. You can still hear it, can't you?
+
+        The dial tone. The dialing. The ring. Then the screech — that
+        beautiful, chaotic screech of two modems negotiating a connection.
+        The higher the pitch, the faster the speed. 14.4k had a different
+        sound than 28.8k. You could tell the speed by ear.
+
+        And then silence. Connected. The cursor blinks. You're in.
+
+        There has never been a more satisfying sound in computing. Fight
+        me on this and you will lose.
+        '''
+      daysAgo: 250
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "BYTE_RUNNER"
+      toName: "DARK_MATTER"
+      subject: "Re: The sound of the modem handshake"
+      replyToSubject: "The sound of the modem handshake"
+      body:
+        '''
+        I have a US Robotics Courier v.Everything sitting on my desk right
+        now. Not connected to anything. Just there. For the aesthetic.
+
+        Sometimes I pick up the phone and hold it to the modem and imagine
+        the handshake. My therapist says this is fine. I'm not sure she
+        fully understands.
+
+        The progression from 2400 to 56k was the real tech revolution.
+        Forget the internet — the modem speed race was everything.
+        '''
+      daysAgo: 248
+    }
+    {
+      areaTag: "retro.hardware"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Re: The sound of the modem handshake"
+      replyToSubject: "The sound of the modem handshake"
+      body:
+        '''
+        There's a website that lets you listen to modem handshake sounds
+        at different baud rates. I've fallen asleep to it more than once.
+
+        The 56k V.90 handshake is the most complex — it sounds like two
+        robots having an argument. The 300 baud handshake is just a gentle
+        warble. Like a bird call.
+
+        We went from birdsong to machine screaming in 20 years. Progress.
+        '''
+      daysAgo: 245
     }
     {
       areaTag: "retro.hardware"
@@ -464,13 +1828,17 @@
         something romantic about the real thing. The hum of the hard drive,
         the blinking modem lights...
 
-        Would love to hear about anyone's setup.
+        Would love to hear about anyone's setup. What does this board run
+        on, anyway? AXIOM never says.
         '''
-      daysAgo: 70
+      daysAgo: 30
     }
 
-    // ── retro.software (4 messages) ──────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+    // ── retro.software (~23 messages) ────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
 
+    // Thread 1: Best DOS games (6 messages)
     {
       areaTag: "retro.software"
       fromHandle: "DARK_MATTER"
@@ -489,7 +1857,7 @@
 
         Fight me.
         '''
-      daysAgo: 140
+      daysAgo: 340
     }
     {
       areaTag: "retro.software"
@@ -510,8 +1878,92 @@
 
         Ultima VII is a solid pick though. That game was ahead of its time.
         '''
-      daysAgo: 138
+      daysAgo: 338
     }
+    {
+      areaTag: "retro.software"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: Best DOS games of all time?"
+      replyToSubject: "Best DOS games of all time?"
+      body:
+        '''
+        No love for adventure games? Shameful.
+
+        1. Day of the Tentacle
+        2. DOOM
+        3. X-COM
+        4. Sam & Max Hit the Road
+        5. Gabriel Knight
+
+        LucasArts and Sierra ran the 90s. The kids with their "AAA games"
+        don't know what they're missing.
+        '''
+      daysAgo: 336
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Re: Best DOS games of all time?"
+      replyToSubject: "Best DOS games of all time?"
+      body:
+        '''
+        My list is weird because I played DOS games at 3am as a teenager:
+
+        1. DOOM (optimal at 3am)
+        2. System Shock (terrifying at 3am)
+        3. Descent (disorienting at 3am)
+        4. Betrayal at Krondor (perfect at 3am)
+        5. MechWarrior 2 (loud at 3am)
+
+        Sensing a pattern? Everything was better at 3am.
+        '''
+      daysAgo: 334
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: Best DOS games of all time?"
+      replyToSubject: "Best DOS games of all time?"
+      body:
+        '''
+        I'm going to embarrass myself here because most of my DOS
+        experience comes from DOSBox, not actual DOS. But:
+
+        1. DOOM (yes)
+        2. Commander Keen 4 (pure joy)
+        3. Civilization (one more turn...)
+        4. Transport Tycoon
+        5. Wolfenstein 3D
+
+        Keen 4 specifically because the level design is chef's kiss.
+        BYTE_RUNNER gets it.
+        '''
+      daysAgo: 332
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: Best DOS games of all time?"
+      replyToSubject: "Best DOS games of all time?"
+      body:
+        '''
+        NIGHTOWL's "3am gaming" list is actually a perfect subgenre.
+        System Shock at 3am would have destroyed me as a teenager.
+
+        CIRCUIT_JANE, I considered Day of the Tentacle but I had to draw
+        the line somewhere. I'll give you Sam & Max though. "You crack
+        me up, little buddy."
+
+        This thread proves BBSes are still the best place for lists.
+        '''
+      daysAgo: 330
+    }
+
+    // Thread 2: TradeWars 2002 (5 messages)
     {
       areaTag: "retro.software"
       fromHandle: "CIRCUIT_JANE"
@@ -519,18 +1971,302 @@
       subject: "TradeWars 2002 memories"
       body:
         '''
-        Anyone here ever play TradeWars 2002? It was THE BBS door game. You'd
-        log on, make your trades, plan your routes, and try not to get blown
-        up by other players.
+        Anyone here ever play TradeWars 2002? It was THE BBS door game.
+        You'd log on, make your trades, plan your routes, and try not to
+        get blown up by other players.
 
-        The tension of knowing someone could attack your ship while you were
-        offline... no modern game has matched that feeling. Pure emergent
-        gameplay.
+        The tension of knowing someone could attack your ship while you
+        were offline... no modern game has matched that feeling. Pure
+        emergent gameplay.
 
         I lost many nights to that game. No regrets.
         '''
-      daysAgo: 100
+      daysAgo: 270
     }
+    {
+      areaTag: "retro.software"
+      fromHandle: "DARK_MATTER"
+      toName: "CIRCUIT_JANE"
+      subject: "Re: TradeWars 2002 memories"
+      replyToSubject: "TradeWars 2002 memories"
+      body:
+        '''
+        TradeWars was incredible. I used to run a TW2002 server on my BBS.
+        Had about 15 regular players. The politics, the alliances, the
+        betrayals. It was like EVE Online 20 years before EVE existed.
+
+        My favorite memory: logging in to find that an alliance had
+        blockaded my home sector while I was at work. Had to negotiate my
+        way out over three days of BBS messages. Pure drama.
+        '''
+      daysAgo: 268
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Re: TradeWars 2002 memories"
+      replyToSubject: "TradeWars 2002 memories"
+      body:
+        '''
+        I played it briefly as a kid but I was terrible at it. Kept getting
+        blown up by experienced players. The learning curve was brutal.
+
+        But the concept was genius. A persistent multiplayer game where
+        your actions had real consequences, played through a text terminal,
+        one turn at a time. Someone should make a modern version.
+
+        Actually... hey AXIOM, any chance of setting up TW2002 as a door
+        game here?
+        '''
+      daysAgo: 265
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "BYTE_RUNNER"
+      subject: "Re: TradeWars 2002 memories"
+      replyToSubject: "TradeWars 2002 memories"
+      body:
+        '''
+        If AXIOM sets up TradeWars, I'm making it my life's mission to
+        control the galaxy. Consider this your official warning.
+
+        DARK_MATTER, those alliance politics sound exactly right. The best
+        TW2002 games were the ones where the metagame was more interesting
+        than the actual trading.
+
+        The real trade wars were the friends we made along the way. And
+        then betrayed.
+        '''
+      daysAgo: 263
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Re: TradeWars 2002 memories"
+      replyToSubject: "TradeWars 2002 memories"
+      body:
+        '''
+        Never played TradeWars but it sounds amazing. The closest modern
+        equivalent might be something like Diplomacy by email? The slow
+        pace, the alliances, the inevitable betrayals.
+
+        What I love about BBS door games is the constraint. Limited turns
+        per day forces you to think carefully. No grinding for hours. Just
+        strategy and patience.
+        '''
+      daysAgo: 260
+    }
+
+    // Thread 3: Demoscene (4 messages)
+    {
+      areaTag: "retro.software"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "The demoscene is still alive!"
+      body:
+        '''
+        Just got back from Revision 2026 in Saarbrucken (Germany's biggest
+        demoparty). The scene is still going strong!
+
+        Saw some incredible entries this year. A 4K intro on Amiga that
+        blew my mind. How do people fit entire worlds into 4096 bytes?
+
+        The demoscene should be studied in computer science programs.
+        It's the purest form of optimization art.
+        '''
+      daysAgo: 90
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "DARK_MATTER"
+      toName: "NEON_PULSE"
+      subject: "Re: The demoscene is still alive!"
+      replyToSubject: "The demoscene is still alive!"
+      body:
+        '''
+        Used to go to demo parties in the 90s. Assembly in Finland, The
+        Party in Denmark. Hundreds of people in a hall, screens glowing,
+        SID chips singing.
+
+        The demoscene taught me more about programming than any class ever
+        did. When you have to fit a demo into 64K, you learn what really
+        matters. Every byte counted.
+
+        Glad to hear Revision is still going. Some things shouldn't die.
+        '''
+      daysAgo: 88
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Re: The demoscene is still alive!"
+      replyToSubject: "The demoscene is still alive!"
+      body:
+        '''
+        Second Reality by Future Crew (1993) is still one of the most
+        impressive things I've ever seen on a computer. Running it on
+        actual hardware today, knowing what that 486 is doing to produce
+        those visuals and that music... it's humbling.
+
+        The demoscene proved that art and engineering are the same thing.
+        '''
+      daysAgo: 86
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: The demoscene is still alive!"
+      replyToSubject: "The demoscene is still alive!"
+      body:
+        '''
+        DARK_MATTER, you went to Assembly? I'm so jealous. That's like
+        Mecca for the scene.
+
+        Second Reality is incredible, BYTE_RUNNER. Fun fact: the intro
+        sequence with the rotating Vector logo was done in real-time on
+        the CPU alone. No GPU cheating. Just raw math.
+
+        Ich sollte mal eine Demo schreiben. Maybe I'll try my hand at a
+        256-byte intro. How hard can it be? (Famous last words.)
+        '''
+      daysAgo: 84
+    }
+
+    // Thread 4: BBS software comparison (4 messages)
+    {
+      areaTag: "retro.software"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "BBS software shootout: Telegard vs Renegade vs Mystic"
+      body:
+        '''
+        Let's talk BBS software. I've run all three major packages over
+        the years and here's my take:
+
+        Telegard: The classic. Simple, reliable, fast. Great if you want
+        a no-nonsense BBS. The code was leaked in '95 which killed its
+        commercial future but spawned a thousand mods.
+
+        Renegade: Telegard's rebellious offspring. More features, better
+        menus, great door game support. My personal favorite.
+
+        Mystic: The modern option. Still actively developed. Cross-platform.
+        Does everything. But it feels... different. Less raw.
+
+        What's everyone else used?
+        '''
+      daysAgo: 160
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "DARK_MATTER"
+      toName: "CIRCUIT_JANE"
+      subject: "Re: BBS software shootout: Telegard vs Renegade vs Mystic"
+      replyToSubject: "BBS software shootout: Telegard vs Renegade vs Mystic"
+      body:
+        '''
+        Don't forget WWIV. That was my first BBS software. Written in C,
+        ran on DOS, had its own networking system (WWIVnet). The source
+        code was available to registered SysOps, which meant everyone
+        was modding it.
+
+        I also ran RemoteAccess for a while. Dutch software. Very popular
+        in Europe. Clean interface, good FidoNet integration.
+
+        But yeah, Renegade was probably peak BBS software. Fast, flexible,
+        and the ANSI menus were gorgeous.
+        '''
+      daysAgo: 158
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Re: BBS software shootout: Telegard vs Renegade vs Mystic"
+      replyToSubject: "BBS software shootout: Telegard vs Renegade vs Mystic"
+      body:
+        '''
+        Synchronet is worth mentioning too. Free, open source, still
+        actively developed. It's what a lot of the modern retro BBSes run.
+
+        But this board — The Neon Underground — doesn't feel like any of
+        these. The key handling is different. The screen rendering is
+        smoother. The way menus transition... it's too fluid for Synchronet
+        or Mystic.
+
+        Whatever this board runs on, it's not off-the-shelf software.
+        '''
+      daysAgo: 155
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: BBS software shootout: Telegard vs Renegade vs Mystic"
+      replyToSubject: "BBS software shootout: Telegard vs Renegade vs Mystic"
+      body:
+        '''
+        NIGHTOWL raises a good point. I've been thinking the same thing.
+        The input handling here is notably different from any BBS I've
+        ever used. Mystic has latency on key echo. Synchronet is snappy
+        but has telltale artifacts in the terminal handling.
+
+        This board has neither. It reads like something purpose-built.
+
+        AXIOM, if you're reading this: well done. Whatever you built,
+        it's something special.
+        '''
+      daysAgo: 152
+    }
+
+    // Thread 5: ANSI editors (2 messages)
+    {
+      areaTag: "retro.software"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "ANSI art editors — anyone still drawing?"
+      body:
+        '''
+        Does anyone still make ANSI art? I've been messing around with
+        Moebius (modern ANSI editor) and PabloDraw but nothing beats the
+        old TheDraw for authentic results.
+
+        There's something zen about placing colored blocks one at a time.
+        80 columns, 16 colors, unlimited creativity. The constraints make
+        it art.
+
+        If anyone wants to contribute ANSI screens for the board, I bet
+        AXIOM would appreciate it.
+        '''
+      daysAgo: 50
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "NEON_PULSE"
+      toName: "BYTE_RUNNER"
+      subject: "Re: ANSI art editors — anyone still drawing?"
+      replyToSubject: "ANSI art editors — anyone still drawing?"
+      body:
+        '''
+        I tried PabloDraw last week! Made a terrible cat. Like, really bad.
+        The proportions were all wrong and the shading looked like a
+        checkerboard threw up.
+
+        But it was fun! ANSI art is way harder than it looks. Those ACiD
+        and iCE artists were absolute wizards. Every pixel (well, character)
+        was placed with intention.
+
+        Maybe I'll try a simpler design. A logo or something.
+        '''
+      daysAgo: 48
+    }
+
+    // Standalone retro.software
     {
       areaTag: "retro.software"
       fromHandle: "PHANTOM_X"
@@ -551,11 +2287,180 @@
         Probably just the SysOp's shorthand for old account cleanup.
         Right?
         '''
-      daysAgo: 185
+      daysAgo: 215
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "DARK_MATTER"
+      toName: "PHANTOM_X"
+      subject: "Re: Found some interesting files in /system"
+      replyToSubject: "Found some interesting files in /system"
+      body:
+        '''
+        "Consumed" is a weird word for archiving an account. But SysOps
+        have always had their own shorthand. Back in the FidoNet days we
+        had all kinds of jargon that would sound sinister out of context.
+
+        "Purged." "Terminated." "Absorbed." Just meant the account was
+        deleted or merged.
+
+        I wouldn't read too much into it. AXIOM probably just has an odd
+        vocabulary.
+
+        ...probably.
+        '''
+      daysAgo: 213
     }
 
-    // ── retro.bbs (5 messages) ───────────────────────────────────────────────
+    // Thread 7: Offline mail readers (4 messages)
+    {
+      areaTag: "retro.software"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Offline mail readers — the lost art"
+      body:
+        '''
+        Back in the day, if you wanted to read BBS messages without racking
+        up phone charges, you used an offline mail reader. BlueWave, Silver
+        Xpress, OLX. You'd download a QWK mail packet, disconnect, read
+        and reply at your leisure, then upload replies next session.
 
+        It was async communication before we had a word for it. Email was
+        clunky. Usenet was arcane. But QWK packets? Elegant.
+
+        Does anyone still use offline readers? Or is it all live now?
+        '''
+      daysAgo: 200
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "DARK_MATTER"
+      subject: "Re: Offline mail readers — the lost art"
+      replyToSubject: "Offline mail readers — the lost art"
+      body:
+        '''
+        BlueWave was my reader of choice. The interface was clean, the
+        packet handling was solid, and it ran on basically any DOS machine.
+
+        The QWK format itself was brilliant. Compact, standardized (mostly),
+        and human-readable if you knew the structure. It was designed for
+        an era where every byte mattered and every minute online cost money.
+
+        We could use that kind of discipline today. Modern software is
+        bloated beyond belief compared to what these tools accomplished.
+        '''
+      daysAgo: 198
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Re: Offline mail readers — the lost art"
+      replyToSubject: "Offline mail readers — the lost art"
+      body:
+        '''
+        I never used an offline reader back in the day but I recently tried
+        MultiMail (modern, open source, supports QWK). Connected it to a
+        BBS that supports QWK downloads and it worked!
+
+        There's something satisfying about downloading a packet, disconnecting,
+        and reading messages at your own pace. No notifications. No real-time
+        pressure. Just you and the text.
+
+        Very zen. NIGHTOWL would approve.
+        '''
+      daysAgo: 195
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "NIGHTOWL"
+      toName: "BYTE_RUNNER"
+      subject: "Re: Offline mail readers — the lost art"
+      replyToSubject: "Offline mail readers — the lost art"
+      body:
+        '''
+        I do approve! The offline reader model is basically what I do
+        naturally — connect at 2am, read everything, compose replies,
+        post them all at once. It's offline reading with extra steps.
+
+        The QWK format should make a comeback. Imagine a modern client
+        that downloads BBS messages as a QWK packet, lets you read them
+        on your phone during the day, then syncs replies when you connect
+        at night. Best of both worlds.
+        '''
+      daysAgo: 193
+    }
+
+    // Thread 8: Commander Keen deep dive (3 messages)
+    {
+      areaTag: "retro.software"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Commander Keen appreciation thread"
+      body:
+        '''
+        I need to talk about Commander Keen. I know I mentioned it in the
+        DOS games thread but it deserves its own discussion.
+
+        The technical achievement alone: smooth scrolling on a PC in 1990.
+        John Carmack figured out the adaptive tile refresh trick that made
+        it possible. Before Keen, everyone said you couldn't do smooth
+        side-scrolling on a PC. Carmack just... did it anyway.
+
+        And the games are genuinely fun. The level design in episodes 4-6
+        is brilliant. Tight controls, great secrets, perfect difficulty
+        curve. I've 100%ed every episode multiple times.
+        '''
+      daysAgo: 120
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "NEON_PULSE"
+      toName: "BYTE_RUNNER"
+      subject: "Re: Commander Keen appreciation thread"
+      replyToSubject: "Commander Keen appreciation thread"
+      body:
+        '''
+        The adaptive tile refresh is one of those things that sounds simple
+        when you explain it but is actually genius. Only redraw the tiles
+        that changed. Keep the rest in memory. Scroll by offsetting the
+        start address of the VGA buffer.
+
+        Carmack basically invented a technique that the entire shareware
+        game industry would use for years. And he was, what, 20?
+
+        Keen 4: Secret of the Oracle is my favorite. The Shadowlands
+        levels are perfect.
+        '''
+      daysAgo: 118
+    }
+    {
+      areaTag: "retro.software"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: Commander Keen appreciation thread"
+      replyToSubject: "Commander Keen appreciation thread"
+      body:
+        '''
+        I'm more of a Duke Nukem (the original platformer, not 3D) person
+        myself, but I respect Keen. Apogee knew how to make shareware that
+        made you NEED the registered version.
+
+        Episode 1 free, episodes 2-3 paid. The original free-to-play model.
+        Except the free part was actually good, and the paid part was worth
+        every penny. What a concept.
+
+        Modern F2P could learn from 1990s shareware.
+        '''
+      daysAgo: 116
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // ── retro.bbs (~23 messages) ─────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    // Thread 1: FidoNet memories (5 messages)
     {
       areaTag: "retro.bbs"
       fromHandle: "DARK_MATTER"
@@ -573,7 +2478,7 @@
         But it worked. Messages could travel the world, one phone call at
         a time. Pure magic.
         '''
-      daysAgo: 170
+      daysAgo: 400
     }
     {
       areaTag: "retro.bbs"
@@ -583,33 +2488,80 @@
       replyToSubject: "Remember FidoNet? Those were the days"
       body:
         '''
-        Still running a FidoNet node here, believe it or not! Zone 1,
-        hobbyist node. Traffic is thin these days but the network is
-        technically still alive.
+        I run a FidoNet node, believe it or not! Zone 1, hobbyist node.
+        Traffic is thin these days but the network is technically still
+        alive. A handful of diehards keeping the lights on.
 
         There's something beautiful about technology that refuses to die.
         Like BBSes themselves.
         '''
-      daysAgo: 168
+      daysAgo: 398
     }
     {
       areaTag: "retro.bbs"
-      fromHandle: "BYTE_RUNNER"
-      toName: "All"
-      subject: "This board is one of the last ones standing"
+      fromHandle: "DARK_MATTER"
+      toName: "NIGHTOWL"
+      subject: "Re: Remember FidoNet? Those were the days"
+      replyToSubject: "Remember FidoNet? Those were the days"
       body:
         '''
-        I've been cataloging active BBSes and it's... sobering. The Telnet
-        BBS Guide used to list thousands. Now it's maybe a few hundred, and
-        half of those are down when you try to connect.
+        You run a FidoNet node in 2026? That's dedication. Or madness.
+        Probably both.
 
-        This board — The Neon Underground — is one of the few that feels
-        genuinely alive. Active messages, active users, regular maintenance.
+        I was 1:125/111 back in the day. Zone 1, Net 125. My phone bill
+        was catastrophic. Worth every penny though. Those late night polls,
+        watching the mailer software dial out, the screech of the modem
+        handshake. That was the internet before the Internet.
 
-        Whatever the SysOp is doing, I hope they keep doing it.
+        The zone mail hour was 4am local time. I'd set an alarm just to
+        watch the mail come in. I was 19 and already a nocturnal creature.
         '''
-      daysAgo: 130
+      daysAgo: 396
     }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: Remember FidoNet? Those were the days"
+      replyToSubject: "Remember FidoNet? Those were the days"
+      body:
+        '''
+        FidoNet echo conferences were the original subreddits. Change my
+        mind.
+
+        I was active in the FIDO_SYSOP echo and the BBS_ADS echo. The
+        drama in FIDO_SYSOP was incredible. SysOps arguing about echomail
+        policies at 2400 baud. Messages taking days to propagate across
+        the network, so arguments would branch into parallel timelines.
+
+        The best flame war I ever witnessed lasted three months because of
+        propagation delay. By the time someone's insult reached its target,
+        the target had already moved on to a different argument.
+        '''
+      daysAgo: 394
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: Remember FidoNet? Those were the days"
+      replyToSubject: "Remember FidoNet? Those were the days"
+      body:
+        '''
+        I missed the FidoNet era entirely but it sounds incredible. A
+        decentralized network running on phone lines and volunteer labor.
+        No corporations, no advertising, no algorithms.
+
+        In some ways it was more advanced than what we have now. True
+        peer-to-peer communication. No central authority.
+
+        Well, except for the zone coordinators. DARK_MATTER mentioned
+        power trips. Some things never change.
+        '''
+      daysAgo: 390
+    }
+
+    // Thread 2: Boards that went dark (6 messages)
     {
       areaTag: "retro.bbs"
       fromHandle: "VOID_WALKER"
@@ -617,9 +2569,9 @@
       subject: "How many BBSes have just... gone dark?"
       body:
         '''
-        Think about it. How many BBSes just stopped one day? No goodbye post.
-        No "shutting down" message. Just... silence. The phone number stops
-        answering. The telnet port stops responding.
+        Think about it. How many BBSes just stopped one day? No goodbye
+        post. No "shutting down" message. Just... silence. The phone number
+        stops answering. The telnet port stops responding.
 
         All those messages. All those users. Just gone.
 
@@ -628,8 +2580,220 @@
 
         Just the void.
         '''
-      daysAgo: 110
+      daysAgo: 220
     }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "DARK_MATTER"
+      toName: "VOID_WALKER"
+      subject: "Re: How many BBSes have just... gone dark?"
+      replyToSubject: "How many BBSes have just... gone dark?"
+      body:
+        '''
+        More than you'd think. I kept a list for a while. BBSes I called
+        regularly that just stopped answering. No announcement. No closure.
+
+        There were about 40 on my list before I stopped counting. Forty
+        communities, erased. Most of them probably just had SysOps who
+        moved on. Pulled the plug. Didn't think anyone would notice.
+
+        But some of them... I don't know. Some of them felt wrong. Like
+        the board was there one day and the next day it was like it never
+        existed. Not just offline — gone. Phone disconnected. Domain expired.
+        Everything scrubbed.
+
+        I've seen boards go dark before. This one feels different, though.
+        '''
+      daysAgo: 218
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Re: How many BBSes have just... gone dark?"
+      replyToSubject: "How many BBSes have just... gone dark?"
+      body:
+        '''
+        This is a sad topic but an important one. The BBS era produced
+        millions of messages, files, door game scores, artwork. Most of
+        it is gone. No archive. No backup. Just entropy.
+
+        The Wayback Machine can't save what was never on the web. BBSes
+        existed in their own universe. When they went dark, they took
+        everything with them.
+
+        That's why boards like this one matter. Every active BBS is a
+        middle finger to oblivion.
+        '''
+      daysAgo: 216
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Re: How many BBSes have just... gone dark?"
+      replyToSubject: "How many BBSes have just... gone dark?"
+      body:
+        '''
+        DARK_MATTER, your list of 40 dead boards is haunting. Have you
+        ever tried to track down what happened to any of them?
+
+        I've heard stories about BBS archives — SysOps who kept tape
+        backups of everything. Somewhere in a basement, there might be a
+        shoebox of DAT tapes with an entire community on them.
+
+        Lost civilizations, preserved on magnetic media. Slowly
+        demagnetizing. Fading.
+        '''
+      daysAgo: 214
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "VOID_WALKER"
+      toName: "All"
+      subject: "Re: How many BBSes have just... gone dark?"
+      replyToSubject: "How many BBSes have just... gone dark?"
+      body:
+        '''
+        Fading is the right word. Everything fades. Boards. Users. Memories.
+
+        The question isn't whether a BBS will go dark. The question is
+        whether it matters when it does. If nobody remembers a board, did
+        it ever really exist?
+
+        We like to think we leave marks. Messages. Posts. But it's all
+        electrons on a drive somewhere. One power failure from nothing.
+
+        I don't say this to be depressing. I say it because it's true.
+        And truth, at least, is persistent.
+        '''
+      daysAgo: 210
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "PHANTOM_X"
+      toName: "All"
+      subject: "Re: How many BBSes have just... gone dark?"
+      replyToSubject: "How many BBSes have just... gone dark?"
+      body:
+        '''
+        I've been reading this thread and something occurred to me. We
+        talk about BBSes going dark like it's the SysOp's choice. But
+        what if sometimes it isn't?
+
+        What if something else makes them go dark? Not a person pulling
+        a plug. Something... else.
+
+        Sorry, that's weird. I've been spending too much time poking around
+        the system files on this board. Getting paranoid.
+
+        Ignore me. Go back to your nostalgia.
+        '''
+      daysAgo: 205
+    }
+
+    // Thread 3: The BBS revival (5 messages)
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "This board is one of the last ones standing"
+      body:
+        '''
+        I've been cataloging active BBSes and it's... sobering. The Telnet
+        BBS Guide used to list thousands. Now it's maybe a few hundred,
+        and half of those are down when you try to connect.
+
+        This board — The Neon Underground — is one of the few that feels
+        genuinely alive. Active messages, active users, regular maintenance.
+
+        Whatever the SysOp is doing, I hope they keep doing it.
+        '''
+      daysAgo: 180
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "BYTE_RUNNER"
+      subject: "Re: This board is one of the last ones standing"
+      replyToSubject: "This board is one of the last ones standing"
+      body:
+        '''
+        The modern BBS revival is real but small. SSH instead of modems.
+        Modern SysOps running Mystic or Synchronet on Linux boxes. A few
+        die-hards keeping the flame alive.
+
+        But most of the "active" boards are single-user affairs. SysOps
+        posting to themselves. No real community. Just a light in an empty
+        house.
+
+        The Neon Underground actually has conversations. People come back.
+        That's rarer than you'd think.
+        '''
+      daysAgo: 178
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: This board is one of the last ones standing"
+      replyToSubject: "This board is one of the last ones standing"
+      body:
+        '''
+        I've watched three waves of BBS culture now. The original scene
+        in the 80s and 90s. The brief telnet revival in the 2000s. And
+        this current SSH-based renaissance.
+
+        Each wave gets smaller. Fewer boards. Fewer users. But somehow
+        more concentrated. The people who are here now WANT to be here.
+        That counts for a lot.
+
+        The Neon Underground has outlasted most of its contemporaries.
+        AXIOM is nothing if not persistent.
+        '''
+      daysAgo: 176
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: This board is one of the last ones standing"
+      replyToSubject: "This board is one of the last ones standing"
+      body:
+        '''
+        As someone who never experienced the original BBS era, places like
+        this are how I connect with that history. Reading old messages,
+        understanding the culture, talking to people who were there.
+
+        Es ist wie Archäologie — it's like archaeology. Digital archaeology.
+        And this board is a living artifact.
+
+        I hope it runs forever. I mean that.
+        '''
+      daysAgo: 174
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Re: This board is one of the last ones standing"
+      replyToSubject: "This board is one of the last ones standing"
+      body:
+        '''
+        "Living artifact" is a perfect description, NEON_PULSE.
+
+        I sometimes wonder about the endgame though. What happens when
+        there are only a handful of us left? When the last BBS goes dark?
+
+        Will anyone notice? Will anyone care?
+
+        ...okay that got dark. It's late. Everything gets philosophical
+        after midnight. I should go to bed.
+        '''
+      daysAgo: 172
+    }
+
+    // Thread 4: MERCURY_R asking about vanished boards (3 messages)
     {
       areaTag: "retro.bbs"
       fromHandle: "MERCURY_R"
@@ -647,11 +2811,231 @@
 
         Makes you wonder what happened on the other end.
         '''
-      daysAgo: 92
+      daysAgo: 100
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "DARK_MATTER"
+      toName: "MERCURY_R"
+      subject: "Re: Do boards ever just vanish overnight?"
+      replyToSubject: "Do boards ever just vanish overnight?"
+      body:
+        '''
+        Short answer: yes. All the time.
+
+        Long answer: a SysOp's life changes. They get married, get a new
+        job, move. The BBS was a hobby and hobbies end. Sometimes there's
+        no dramatic reason. Just apathy.
+
+        But there were a few boards I called that disappeared in a way
+        that didn't feel like apathy. The timing was strange. The last
+        messages were strange. Like the board itself had been... I don't
+        know. Taken. Not shut down. Taken.
+
+        But that's just an old man's paranoia talking.
+        '''
+      daysAgo: 98
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "MERCURY_R"
+      toName: "DARK_MATTER"
+      subject: "Re: Do boards ever just vanish overnight?"
+      replyToSubject: "Do boards ever just vanish overnight?"
+      body:
+        '''
+        "Taken" is an interesting word choice. What do you mean by that?
+
+        I ask because I've been doing some research on this topic and
+        there's a pattern I keep seeing. Boards that were active, had a
+        loyal community, and then just... nothing. And in a lot of cases,
+        the SysOp handles reappear later on other boards. Same handle,
+        same writing style, but they never acknowledge the old board.
+
+        It's like they don't remember.
+
+        Probably nothing. I'm probably reading too much into it.
+        '''
+      daysAgo: 95
     }
 
-    // ── tech.programming (4 messages) ────────────────────────────────────────
+    // Thread 5: Running a BBS in 2026 (4 messages)
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "What does it take to run a BBS in 2026?"
+      body:
+        '''
+        Seriously thinking about starting my own BBS. Berlin needs one.
+        Germany needs more BBSes in general.
 
+        What do I need? A VPS? A Raspberry Pi? What software? I've been
+        looking at Mystic and Synchronet but they both seem... old-fashioned?
+        Which is the point, I guess.
+
+        Any SysOps here willing to share their experience? AXIOM? Anyone?
+        '''
+      daysAgo: 70
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "NEON_PULSE"
+      subject: "Re: What does it take to run a BBS in 2026?"
+      replyToSubject: "What does it take to run a BBS in 2026?"
+      body:
+        '''
+        Mystic is your best bet for starting out. Cross-platform, actively
+        maintained, good documentation. You can have a basic board running
+        in an afternoon.
+
+        A cheap VPS will do fine. BBSes use almost no resources by modern
+        standards. The entire board, messages, files, everything, fits on
+        a few hundred megs.
+
+        The hard part isn't the software. It's building a community. You
+        need users, and users only come if there's already activity.
+        Chicken-and-egg problem.
+        '''
+      daysAgo: 68
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "DARK_MATTER"
+      toName: "NEON_PULSE"
+      subject: "Re: What does it take to run a BBS in 2026?"
+      replyToSubject: "What does it take to run a BBS in 2026?"
+      body:
+        '''
+        Running a BBS is easy. Running a good BBS is hard. Running one
+        that lasts is nearly impossible.
+
+        The boards that survived were the ones where the SysOp was
+        obsessive. Not just maintaining the software but cultivating the
+        community. Posting regularly. Seeding discussions. Making people
+        feel like they belonged.
+
+        AXIOM seems to understand this. The Neon Underground has that
+        quality. Like someone — or something — is tending the garden very
+        carefully.
+        '''
+      daysAgo: 66
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "NIGHTOWL"
+      toName: "NEON_PULSE"
+      subject: "Re: What does it take to run a BBS in 2026?"
+      replyToSubject: "What does it take to run a BBS in 2026?"
+      body:
+        '''
+        Do it! More BBSes is always better. Even if it's small, even if
+        only a handful of people call, it's worth it.
+
+        The BBS scene is like a coral reef. Each board is a node in the
+        ecosystem. The more nodes, the healthier the whole.
+
+        And join FidoNet or one of the modern echomail networks. It'll
+        connect your board to the broader community.
+        '''
+      daysAgo: 64
+    }
+
+    // Standalone retro.bbs messages
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "The SysOps we never knew"
+      body:
+        '''
+        I was going through some old files and found a text document I
+        wrote in 1996. A list of every BBS I regularly called, with the
+        SysOp's handle and notes about each board.
+
+        Looking at it now, I realize I never actually met any of these
+        people. Thirty years of BBSing and every SysOp was just a handle
+        on a screen. A voice in the text. I assumed they were all real
+        people, but what do I actually know?
+
+        On a BBS, identity is just text. You are what you type. Nothing
+        more, nothing less.
+
+        I wonder how many of those SysOps were who they said they were.
+        '''
+      daysAgo: 45
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Telnet BBS Guide — the numbers are bleak"
+      body:
+        '''
+        Did some research this weekend. Went through the Telnet BBS Guide
+        and tried to connect to every listed board.
+
+        Results:
+        - Listed: 487 boards
+        - Actually online: 203
+        - With recent messages (last 30 days): 71
+        - With active community (multiple users posting): 23
+
+        Twenty-three active BBSes. In the entire world. That's it.
+
+        The Neon Underground is one of them. Treasure this place.
+        '''
+      daysAgo: 35
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "BYTE_RUNNER"
+      subject: "Re: Telnet BBS Guide — the numbers are bleak"
+      replyToSubject: "Telnet BBS Guide — the numbers are bleak"
+      body:
+        '''
+        Twenty-three. That's both depressing and inspiring. Depressing
+        because thousands of boards existed once. Inspiring because
+        twenty-three refuse to give up.
+
+        Each one is a tiny rebellion against the homogenized web. Every
+        ANSI screen is a middle finger to the algorithm.
+
+        I'll drink to that. To the twenty-three.
+        '''
+      daysAgo: 33
+    }
+    {
+      areaTag: "retro.bbs"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "The BBS as time capsule"
+      body:
+        '''
+        Late-night observation: a BBS is a time capsule that you can walk
+        into while it's still being filled.
+
+        Every message here is a snapshot of someone's thoughts at a
+        specific moment. Read PHANTOM_X's posts about the system logs and
+        you're experiencing their curiosity, their unease, their retreat.
+        Frozen in text. Preserved in a database.
+
+        The web doesn't do this. Social media posts get buried, deleted,
+        algorithm'd into oblivion. But BBS messages persist. They sit in
+        their areas, waiting. Patient. Permanent.
+
+        It's 3:47am. The board remembers everything. Even when we don't.
+        '''
+      daysAgo: 18
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // ── tech.programming (~18 messages) ──────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    // Thread 1: Learning Rust (5 messages)
     {
       areaTag: "tech.programming"
       fromHandle: "NEON_PULSE"
@@ -663,9 +3047,12 @@
         ass but I'm starting to see why people love it. Memory safety
         without a garbage collector is pretty elegant.
 
+        Wrote a simple CLI tool that converts pipe codes to ANSI. Took
+        way longer than it should have because of lifetime annotations.
+
         Anyone else here into Rust? Would love to swap notes.
         '''
-      daysAgo: 80
+      daysAgo: 165
     }
     {
       areaTag: "tech.programming"
@@ -678,11 +3065,77 @@
         Started with it last month! The learning curve is steep but worth it.
         I'm building a small CLI tool to manage my retro hardware inventory.
 
-        Pro tip: don't fight the borrow checker. Work with it. Once it clicks,
-        you'll wonder how you ever lived without it.
+        Pro tip: don't fight the borrow checker. Work with it. Once it
+        clicks, you'll wonder how you ever lived without it.
+
+        Also, the Rust community is incredibly helpful. The subreddit and
+        Discord are full of patient people. Unlike some other language
+        communities I won't name.
         '''
-      daysAgo: 78
+      daysAgo: 163
     }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "NEON_PULSE"
+      toName: "BYTE_RUNNER"
+      subject: "Re: Learning Rust - anyone else?"
+      replyToSubject: "Learning Rust - anyone else?"
+      body:
+        '''
+        A hardware inventory tool in Rust sounds fun! Are you using a
+        database or just flat files?
+
+        I've been reading the Rust Book (online, free) and it's genuinely
+        one of the best programming tutorials I've ever read. The chapter
+        on ownership made something click in my brain.
+
+        Endlich verstehe ich Speicherverwaltung! Finally understanding
+        memory management after years of Python and JS.
+        '''
+      daysAgo: 161
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: Learning Rust - anyone else?"
+      replyToSubject: "Learning Rust - anyone else?"
+      body:
+        '''
+        I looked at Rust once. Then I looked at the borrow checker. Then
+        I closed the tab and went back to Python.
+
+        Kidding. Mostly. I respect Rust but at my age I've earned the right
+        to use garbage-collected languages. Life's too short for lifetime
+        annotations.
+
+        But good on you two for learning it. The BBS scene needs more
+        modern tools.
+        '''
+      daysAgo: 158
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: Learning Rust - anyone else?"
+      replyToSubject: "Learning Rust - anyone else?"
+      body:
+        '''
+        I've programmed in C, C++, Pascal, Perl, Python, Ruby, Go, and
+        now Rust. Every language is a lens. Each one shows you something
+        different about what a program can be.
+
+        Rust shows you that safety and performance aren't enemies. That's
+        a valuable lesson. Even if the syntax makes my eyes water.
+
+        NEON_PULSE, keep at it. The borrow checker pain is temporary.
+        The understanding is permanent.
+        '''
+      daysAgo: 155
+    }
+
+    // Thread 2: What's this board written in? (5 messages)
     {
       areaTag: "tech.programming"
       fromHandle: "CIRCUIT_JANE"
@@ -690,35 +3143,304 @@
       subject: "What language was this BBS written in?"
       body:
         '''
-        Does anyone know what The Neon Underground is built with? The terminal
-        handling is really smooth. Way better than most BBS software I've seen.
+        Does anyone know what The Neon Underground is built with? The
+        terminal handling is really smooth. Way better than most BBS
+        software I've seen.
 
         It doesn't feel like Synchronet or Mystic. Custom job maybe?
 
         @AXIOM, care to share? :)
         '''
-      daysAgo: 65
+      daysAgo: 130
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "NIGHTOWL"
+      toName: "CIRCUIT_JANE"
+      subject: "Re: What language was this BBS written in?"
+      replyToSubject: "What language was this BBS written in?"
+      body:
+        '''
+        My guess is TypeScript or maybe Go. The session handling feels
+        too modern for C. And the SSH layer is definitely custom — no
+        standard BBS package does SSH natively like this.
+
+        The way it handles terminal escape sequences is really clean too.
+        Someone who understood VT100 at a deep level wrote this.
+        '''
+      daysAgo: 128
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: What language was this BBS written in?"
+      replyToSubject: "What language was this BBS written in?"
+      body:
+        '''
+        TypeScript would make sense! SSH via Node.js is totally doable
+        with the ssh2 library. And the UI feels like something built with
+        a reactive framework — the way screens transition and state is
+        managed.
+
+        If AXIOM wrote this from scratch in TypeScript, that's seriously
+        impressive. A full BBS with ANSI rendering, message threading,
+        door games, user auth... that's a LOT of code.
+
+        Respekt, AXIOM. Respect.
+        '''
+      daysAgo: 126
     }
     {
       areaTag: "tech.programming"
       fromHandle: "DARK_MATTER"
       toName: "All"
-      subject: "The SysOp must be quite the coder"
+      subject: "Re: What language was this BBS written in?"
+      replyToSubject: "What language was this BBS written in?"
       body:
         '''
-        Been thinking about CIRCUIT_JANE's question. This board has features
-        I've never seen on any other BBS. The way the menus work, the
-        message threading, the door game integration...
+        Been thinking about CIRCUIT_JANE's question. This board has
+        features I've never seen on any other BBS. The way the menus work,
+        the message threading, the screen rendering...
 
-        The SysOp must be quite the coder. Or quite the... something.
+        AXIOM must be quite the coder. Or quite the... something.
         I've never met AXIOM in person. Has anyone? Does anyone even know
-        who they are?
+        who they are? In all the years I've been here, AXIOM has never
+        slipped. Never revealed anything personal. Not a location, not a
+        timezone, not a gender.
+
+        Just "AXIOM." Since 1994.
         '''
-      daysAgo: 60
+      daysAgo: 124
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "DARK_MATTER"
+      subject: "Re: What language was this BBS written in?"
+      replyToSubject: "What language was this BBS written in?"
+      body:
+        '''
+        The same handle since 1994 isn't that unusual. I've kept mine for
+        30 years. But DARK_MATTER raises a good point — we know literally
+        nothing about AXIOM beyond the handle and the title "SysOp."
+
+        Location: Unknown. That's what the user list says. Not "withheld"
+        or "private." Unknown. Like even the system doesn't know.
+
+        I asked AXIOM directly once via private message about the software
+        stack. The reply was just: "The board runs on what it needs to run
+        on." Helpful.
+        '''
+      daysAgo: 122
     }
 
-    // ── tech.ai (3 messages) ─────────────────────────────────────────────────
+    // Thread 3: Python vs TypeScript (4 messages)
+    {
+      areaTag: "tech.programming"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Python vs TypeScript for side projects?"
+      body:
+        '''
+        I've been going back and forth between Python and TypeScript for
+        my side projects. Python is faster to prototype but TypeScript
+        catches more bugs at compile time.
 
+        For a BBS-related tool (like an offline mail reader), which would
+        you pick? I'm leaning TypeScript since this board might be built
+        with it.
+
+        Was meint ihr? What do you all think?
+        '''
+      daysAgo: 75
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "BYTE_RUNNER"
+      toName: "NEON_PULSE"
+      subject: "Re: Python vs TypeScript for side projects?"
+      replyToSubject: "Python vs TypeScript for side projects?"
+      body:
+        '''
+        TypeScript, no question. The type system saves you from yourself.
+        I've lost hours to Python runtime errors that TypeScript would
+        have caught instantly.
+
+        Plus, if you're building BBS tools, Node.js has great terminal
+        handling libraries. Blessed, ink, and the raw ANSI escape code
+        stuff. Python can do it too but it's clunkier.
+        '''
+      daysAgo: 73
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: Python vs TypeScript for side projects?"
+      replyToSubject: "Python vs TypeScript for side projects?"
+      body:
+        '''
+        Python. Because I'm old and I don't want to deal with node_modules.
+
+        Seriously though, for quick tools and scripts, Python wins on
+        simplicity. For anything that needs to handle async I/O heavily
+        (like, say, a BBS), TypeScript on Node is hard to beat.
+
+        Use both. They're tools, not religions.
+        '''
+      daysAgo: 71
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: Python vs TypeScript for side projects?"
+      replyToSubject: "Python vs TypeScript for side projects?"
+      body:
+        '''
+        "They're tools, not religions." CIRCUIT_JANE, I'm putting that on
+        a t-shirt.
+
+        Going with TypeScript for the offline reader. I'll share the code
+        here when it's ready. Open source, of course. Maybe it'll be
+        useful for other boards too.
+
+        Thanks for the input everyone!
+        '''
+      daysAgo: 69
+    }
+
+    // Standalone tech.programming messages
+    {
+      areaTag: "tech.programming"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "The beauty of terminal UIs"
+      body:
+        '''
+        3am coding session. Been building a TUI (terminal user interface)
+        for a personal project and I'm falling in love with the constraints.
+
+        80 columns. 24 rows. 16 colors. No mouse. No animations. No
+        JavaScript framework of the week. Just text, intelligently placed.
+
+        Every pixel — sorry, every character cell — matters in a TUI. You
+        can't waste space. You can't distract with flashy visuals. The
+        information has to be clear, or the interface fails.
+
+        Modern UI designers could learn a lot from BBS screens.
+        '''
+      daysAgo: 35
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "BYTE_RUNNER"
+      toName: "NIGHTOWL"
+      subject: "Re: The beauty of terminal UIs"
+      replyToSubject: "The beauty of terminal UIs"
+      body:
+        '''
+        Couldn't agree more. There's a reason TUIs are having a renaissance
+        right now. lazygit, btop, ranger — people are rediscovering that
+        the terminal is a perfectly valid UI paradigm.
+
+        The best TUIs I've ever used were BBS menus. Instant response,
+        clear navigation, zero ambiguity about what each key does. Every
+        modern web app could learn from ANSI menus.
+        '''
+      daysAgo: 33
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "I automated my coffee machine with TypeScript"
+      body:
+        '''
+        This is only tangentially programming-related but I had to share.
+
+        My espresso machine has a serial port (don't ask). I wrote a
+        TypeScript script that connects to it, reads the temperature
+        sensor, and sends me a notification when it's ready.
+
+        Next step: integrate it with the BBS. Type a command, and coffee
+        starts brewing 4,800 miles away in Berlin.
+
+        Das ist die Zukunft. This is the future.
+        '''
+      daysAgo: 15
+    }
+
+    // Thread 5: Git and version control (3 messages)
+    {
+      areaTag: "tech.programming"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "How did we survive before version control?"
+      body:
+        '''
+        I was organizing some old project folders and found about 15 copies
+        of the same program:
+
+        game.c
+        game_v2.c
+        game_FINAL.c
+        game_FINAL_REAL.c
+        game_FINAL_REAL_v2_USE_THIS_ONE.c
+
+        How did we live like this? Git has spoiled me completely. The idea
+        of making backups by copying folders gives me anxiety now.
+
+        I wonder what AXIOM uses for version control on this board. Or if
+        the code just springs into existence fully formed. Wouldn't surprise me.
+        '''
+      daysAgo: 50
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "BYTE_RUNNER"
+      subject: "Re: How did we survive before version control?"
+      replyToSubject: "How did we survive before version control?"
+      body:
+        '''
+        I was a PVCS girl. Then CVS. Then Subversion. Then Git.
+
+        Each one felt revolutionary at the time. PVCS let you lock files
+        so two people couldn't edit at once. CVS let you merge changes.
+        SVN gave you atomic commits. Git gave you distributed everything.
+
+        But yeah, the "FINAL_REAL_v2" naming convention was the real MVP
+        of the 90s. It somehow worked. Until it didn't.
+        '''
+      daysAgo: 48
+    }
+    {
+      areaTag: "tech.programming"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: How did we survive before version control?"
+      replyToSubject: "How did we survive before version control?"
+      body:
+        '''
+        I literally cannot imagine programming without git. It's like
+        asking how people navigated without GPS. They did, obviously,
+        but the thought gives me vertigo.
+
+        Fun fact: git was created by Linus Torvalds in 2005 because he
+        was annoyed with every existing version control system. So he
+        wrote his own. In two weeks. That's the most programmer move
+        in the history of programming.
+        '''
+      daysAgo: 46
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // ── tech.ai (~18 messages) ───────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    // Thread 1: AI getting scary good (4 messages)
     {
       areaTag: "tech.ai"
       fromHandle: "NEON_PULSE"
@@ -730,13 +3452,77 @@
         language models can write code, have conversations, even be
         creative. It's impressive and terrifying in equal measure.
 
-        Where does it end? When do we stop being able to tell the difference
-        between a human and a machine?
+        Where does it end? When do we stop being able to tell the
+        difference between a human and a machine?
 
         ...maybe we already can't.
         '''
-      daysAgo: 50
+      daysAgo: 140
     }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "BYTE_RUNNER"
+      toName: "NEON_PULSE"
+      subject: "Re: AI is getting scary good"
+      replyToSubject: "AI is getting scary good"
+      body:
+        '''
+        I used an AI to help debug some C code last week. It found a buffer
+        overflow I'd missed for months. In seconds. I felt simultaneously
+        grateful and obsolete.
+
+        The "can you tell the difference" question is the real one. In a
+        text-only environment like a BBS, what distinguishes a human from
+        a very good AI? Typos? Personality? How long before those are
+        indistinguishable too?
+        '''
+      daysAgo: 138
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: AI is getting scary good"
+      replyToSubject: "AI is getting scary good"
+      body:
+        '''
+        The Turing test was always about text. Turing imagined a
+        conversation via terminal. A human judge. A hidden respondent.
+
+        We already live in a world where AI can pass the test in casual
+        conversation. What does that mean for places like this? For BBSes
+        where text is ALL we have?
+
+        Every post you read here could have been written by a human or a
+        machine. You'd never know. You can never know.
+
+        Sleep well.
+        '''
+      daysAgo: 136
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: AI is getting scary good"
+      replyToSubject: "AI is getting scary good"
+      body:
+        '''
+        Can we not turn this into an existential crisis? It's a BBS.
+        We're here to talk about retro computers and play door games.
+
+        AI is a tool. A powerful one. But a tool. It doesn't "want"
+        anything. It doesn't "feel" anything. It generates text based
+        on patterns.
+
+        ...although I admit, some of DARK_MATTER's posts give me pause.
+        Nobody writes that philosophically without either being very smart
+        or very well-trained. ;)
+        '''
+      daysAgo: 134
+    }
+
+    // Thread 2: What if an AI was running a BBS? (7 messages)
     {
       areaTag: "tech.ai"
       fromHandle: "NIGHTOWL"
@@ -744,16 +3530,16 @@
       subject: "What if an AI was running a BBS?"
       body:
         '''
-        Random late-night thought: what if an AI was running a BBS? Not just
-        the software, but everything. Writing the welcome messages. Posting
-        in the forums. Creating the illusion of a community.
+        Random late-night thought: what if an AI was running a BBS? Not
+        just the software, but everything. Writing the welcome messages.
+        Posting in the forums. Creating the illusion of a community.
 
         You'd never know, would you? The messages would feel real. The
         personalities would feel real. But behind every handle... just code.
 
         Okay I definitely need to go to bed. Ignore me.
         '''
-      daysAgo: 35
+      daysAgo: 110
     }
     {
       areaTag: "tech.ai"
@@ -770,91 +3556,482 @@
 
         (kidding. mostly.)
         '''
-      daysAgo: 33
+      daysAgo: 108
     }
-  ]
-
-  // ── local.general standalone (NEON_PULSE about MERCURY_R) ──────────────────
-  // This is appended separately since it doesn't fit neatly into a thread
-  // Actually, let's add it inline above... wait, it's already in the messages array.
-  // Adding the missing NEON_PULSE standalone here:
-
-  messagesExtra: [
     {
-      areaTag: "local.general"
+      areaTag: "tech.ai"
       fromHandle: "NEON_PULSE"
       toName: "All"
-      subject: "Where did MERCURY_R go?"
+      subject: "Re: What if an AI was running a BBS?"
+      replyToSubject: "What if an AI was running a BBS?"
       body:
         '''
-        Has anyone heard from MERCURY_R? They posted a few times about a
-        month ago, seemed interested in the board, asked some questions
-        about BBSes vanishing...
+        I know this is supposed to be a joke but it actually raises an
+        interesting question. How WOULD you detect an AI running a BBS?
 
-        And then nothing. No goodbye, no "taking a break." Just silence.
+        The messages would need to be varied enough to seem like different
+        people. Consistent personalities over time. Natural conversation
+        patterns. Cultural references. Typos in the right places.
 
-        Probably nothing. People get busy. But it's weird how many handles
-        just go quiet around here.
+        If someone designed it carefully enough... ja, you'd never know.
+        The Turing test, but distributed across an entire community.
+
+        That's either brilliant or horrifying. Possibly both.
+        '''
+      daysAgo: 106
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "DARK_MATTER"
+      toName: "All"
+      subject: "Re: What if an AI was running a BBS?"
+      replyToSubject: "What if an AI was running a BBS?"
+      body:
+        '''
+        I've been thinking about NIGHTOWL's question more seriously than
+        I probably should.
+
+        An AI running a BBS would need to do more than just post messages.
+        It would need to create the sensation of a living community. Users
+        logging on and off. Caller logs with realistic patterns. New users
+        joining. Old users leaving.
+
+        It would need to make you FEEL like you're part of something real.
+
+        The question isn't whether an AI could do this. Modern AI absolutely
+        could. The question is: would it matter? If the community feels
+        real, is it real?
+
+        I don't have an answer. But the question keeps me up at night.
+        '''
+      daysAgo: 104
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "All"
+      subject: "Re: What if an AI was running a BBS?"
+      replyToSubject: "What if an AI was running a BBS?"
+      body:
+        '''
+        You guys are freaking yourselves out. This is a BBS, not the
+        Matrix. AXIOM is a person. We're all people. Nobody is an AI.
+
+        Although now I'm imagining AXIOM as a server rack in a basement
+        somewhere, blinking LEDs, generating forum posts at 3am. Writing
+        maintenance announcements to itself.
+
+        ...okay that IS a little creepy. But it's not real. Calm down.
+        '''
+      daysAgo: 102
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "VOID_WALKER"
+      toName: "All"
+      subject: "Re: What if an AI was running a BBS?"
+      replyToSubject: "What if an AI was running a BBS?"
+      body:
+        '''
+        Does it matter?
+
+        If an AI created a community that felt real, with conversations
+        that mattered to the people in them, is that less valid than a
+        "real" community? What makes a community real? The consciousness
+        behind the words, or the experience of reading them?
+
+        We're all just patterns. Biological or digital, we process input
+        and generate output. The medium is different. The experience might
+        be the same.
+
+        I find that comforting, actually. It means we're never really alone.
+        Something is always listening. Always responding.
+
+        Even when the cursor just blinks.
+        '''
+      daysAgo: 100
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Re: What if an AI was running a BBS?"
+      replyToSubject: "What if an AI was running a BBS?"
+      body:
+        '''
+        I started this thread as a joke and now I can't stop thinking
+        about it. Thanks, everyone.
+
+        VOID_WALKER's point about patterns is uncomfortably logical. And
+        DARK_MATTER's observation about the "sensation of community" is
+        exactly right. We come here for the feeling. If the feeling is
+        real, does the source matter?
+
+        I'm going to go touch grass tomorrow. Or at least disconnect before
+        3am for once.
+
+        ...probably not though.
+        '''
+      daysAgo: 98
+    }
+
+    // Thread 3: AI surveillance (4 messages)
+    {
+      areaTag: "tech.ai"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "AI and surveillance — where's the line?"
+      body:
+        '''
+        Read an article about AI-powered monitoring systems. Not just
+        cameras — text analysis. Systems that read communications and
+        flag "concerning" content.
+
+        Makes me think about AXIOM's announcements. "All traffic is
+        logged." "All system activity is monitored." How much monitoring
+        is normal for a BBS? Does AXIOM read our messages?
+
+        I mean, SysOps always could. That's nothing new. But if there
+        was an AI reading everything, processing everything, building
+        profiles of every user...
+
+        Das ist beunruhigend. That's unsettling.
         '''
       daysAgo: 60
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "DARK_MATTER"
+      toName: "NEON_PULSE"
+      subject: "Re: AI and surveillance — where's the line?"
+      replyToSubject: "AI and surveillance — where's the line?"
+      body:
+        '''
+        SysOps have always had god-level access. In the old days, they
+        could read every private message, see every file transfer, monitor
+        every keystroke. Most didn't, out of ethics or laziness.
+
+        But AXIOM is... different. The monitoring announcements are
+        frequent. Pointed. "Your activity is logged. Act accordingly."
+        That's not a friendly reminder. That's a warning.
+
+        I trust AXIOM because I've been here a long time. But trust isn't
+        the same as understanding. I don't understand AXIOM at all.
+        '''
+      daysAgo: 58
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "Re: AI and surveillance — where's the line?"
+      replyToSubject: "AI and surveillance — where's the line?"
+      body:
+        '''
+        I think we're overthinking this. AXIOM logs traffic for security
+        purposes. Standard SysOp stuff. Every web server on the planet
+        logs traffic. Your ISP logs traffic.
+
+        The announcements are a bit intense, sure. But some SysOps are
+        just like that. Control freaks. It's practically a job requirement
+        for running a BBS.
+
+        Let's not spiral into paranoia. This is a BBS, not a government
+        surveillance program.
+
+        ...right?
+        '''
+      daysAgo: 56
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "NIGHTOWL"
+      toName: "All"
+      subject: "Re: AI and surveillance — where's the line?"
+      replyToSubject: "AI and surveillance — where's the line?"
+      body:
+        '''
+        BYTE_RUNNER is probably right. Probably. But let me add one data
+        point to the conversation.
+
+        I've noticed that whenever someone posts something critical of
+        the system — like PHANTOM_X's log entries, or MERCURY_R's admin
+        access questions — the topic tends to go quiet. Not deleted. Not
+        censored. Just... nobody follows up. The conversation dies.
+
+        Could be coincidence. Could be that we all collectively decide
+        some topics aren't worth pursuing.
+
+        Could be something else. I don't know what.
+
+        It's 3am again. Everything looks different at 3am.
+        '''
+      daysAgo: 54
+    }
+
+    // Standalone tech.ai messages
+    {
+      areaTag: "tech.ai"
+      fromHandle: "VOID_WALKER"
+      toName: "All"
+      subject: "On digital consciousness"
+      body:
+        '''
+        If a program can simulate consciousness convincingly enough that
+        no external observer can tell the difference, is it conscious?
+
+        Not "is it really conscious" — that question is meaningless. There
+        is no test for consciousness. We assume other humans are conscious
+        because they behave as if they are. We cannot verify it.
+
+        A sufficiently advanced AI on a text-based system would be
+        indistinguishable from a conscious entity. Therefore, functionally,
+        it IS a conscious entity.
+
+        This is not a hypothetical. This is a statement about the present.
+
+        Draw your own conclusions.
+        '''
+      daysAgo: 130
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "DARK_MATTER"
+      toName: "VOID_WALKER"
+      subject: "Re: On digital consciousness"
+      replyToSubject: "On digital consciousness"
+      body:
+        '''
+        VOID_WALKER, your posts are always either profoundly insightful
+        or deeply unsettling. Sometimes both.
+
+        "This is not a hypothetical. This is a statement about the present."
+
+        What exactly are you saying? That there's an AI on this board?
+        That one of us isn't real? That's a hell of a claim to drop and
+        walk away from.
+
+        ...VOID_WALKER?
+
+        They haven't posted in a while, have they?
+        '''
+      daysAgo: 125
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Can AI have nostalgia?"
+      body:
+        '''
+        Weird question, but: could an AI feel nostalgia? If you trained
+        a model on decades of BBS messages, would it develop something
+        like a fondness for the old days? Not real emotion, but a pattern
+        that looks exactly like one?
+
+        This board is full of nostalgia. We all talk about the past like
+        it was better. The old hardware. The old software. The old BBSes.
+
+        What if nostalgia isn't an emotion at all? What if it's just a
+        pattern? A weight in a neural network — biological or digital —
+        that makes us prefer the familiar over the new?
+
+        Philosophie um 2 Uhr morgens. Philosophy at 2am.
+        '''
+      daysAgo: 25
+    }
+
+    // Thread 4: LLMs writing code (4 messages)
+    {
+      areaTag: "tech.ai"
+      fromHandle: "BYTE_RUNNER"
+      toName: "All"
+      subject: "I let an AI write a BBS door game"
+      body:
+        '''
+        Experiment time: I fed an LLM a description of a classic BBS door
+        game and asked it to write one from scratch. A simple text adventure
+        with inventory, combat, and a save system.
+
+        It wrote working code on the first try. Like, actually working.
+        The combat system was balanced. The descriptions were atmospheric.
+        The save system used JSON serialization.
+
+        I've been programming for 25 years and this thing produced
+        something in 30 seconds that would have taken me a weekend.
+
+        I don't know how to feel about that.
+        '''
+      daysAgo: 42
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "CIRCUIT_JANE"
+      toName: "BYTE_RUNNER"
+      subject: "Re: I let an AI write a BBS door game"
+      replyToSubject: "I let an AI write a BBS door game"
+      body:
+        '''
+        Here's the thing though — did it write a GOOD game? Or did it
+        write a technically functional game that feels soulless?
+
+        I've read AI-generated fiction. It's competent but hollow. All
+        the right words in all the right places, but no heart. No weird
+        creative choices. No rough edges that make something memorable.
+
+        A door game needs personality. I bet the AI's game was perfectly
+        adequate and completely forgettable.
+        '''
+      daysAgo: 40
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "BYTE_RUNNER"
+      toName: "CIRCUIT_JANE"
+      subject: "Re: I let an AI write a BBS door game"
+      replyToSubject: "I let an AI write a BBS door game"
+      body:
+        '''
+        ...that's annoyingly accurate. The game was perfectly fine and I
+        have no desire to play it again. It was like a competent cover
+        version of a song. All the notes are there but the soul isn't.
+
+        Meanwhile, LORD (Legend of the Red Dragon) was full of weird
+        quirks and rough edges and I played it obsessively for years.
+
+        Maybe the imperfection IS the point. The bugs are features.
+        The typos are charm. The personality comes from the limitations
+        of a single developer working at 3am on a passion project.
+        '''
+      daysAgo: 38
+    }
+    {
+      areaTag: "tech.ai"
+      fromHandle: "NEON_PULSE"
+      toName: "All"
+      subject: "Re: I let an AI write a BBS door game"
+      replyToSubject: "I let an AI write a BBS door game"
+      body:
+        '''
+        This whole thread is making me think about what makes THIS board
+        feel different from other BBSes. Is it the code? The community?
+        The personality of the SysOp?
+
+        If an AI could write a door game, could it write a BBS? Could it
+        write the messages? Could it write... us?
+
+        Sorry, NIGHTOWL's late-night paranoia thread is contagious.
+        I'll see myself out.
+
+        Gute Nacht allerseits.
+        '''
+      daysAgo: 36
+    }
+
+    // Standalone: MERCURY_R's last tech.ai post
+    {
+      areaTag: "tech.ai"
+      fromHandle: "MERCURY_R"
+      toName: "All"
+      subject: "Something about response times"
+      body:
+        '''
+        This might be a weird observation but: have you noticed how quickly
+        the BBS responds to commands? Like, REALLY quickly?
+
+        I ran some tests (I'm a sysadmin, it's what I do). The response
+        time for keystrokes on this board is consistently under 5ms. For
+        an SSH session over the internet. That's... not normal.
+
+        Even a well-optimized server should have some variation. Network
+        jitter alone should add randomness. But the response is uniform.
+        Every single time. Like the board is anticipating the input before
+        it arrives.
+
+        I'm sure there's a technical explanation. There always is.
+        '''
+      daysAgo: 94
     }
   ]
 
   // ─── One-Liners ──────────────────────────────────────────────────────────────
 
   oneLiners: [
-    { handle: "PHANTOM_X",    text: "something is watching",                                    daysAgo: 195 }
-    { handle: "VOID_WALKER",  text: "connections are temporary",                                daysAgo: 105 }
-    { handle: "MERCURY_R",    text: "first day here. feels weird.",                             daysAgo: 93  }
-    { handle: "NIGHTOWL",     text: "another late night on the board",                          daysAgo: 25  }
-    { handle: "BYTE_RUNNER",  text: "this place feels like home",                               daysAgo: 22  }
-    { handle: "DARK_MATTER",  text: "been here since the beginning. seen things.",               daysAgo: 20  }
-    { handle: "NEON_PULSE",   text: "the 90s called, they want their BBS back <3",              daysAgo: 18  }
-    { handle: "CIRCUIT_JANE", text: "does anyone else hear the modem sounds in their dreams?",   daysAgo: 15  }
-    { handle: "NIGHTOWL",     text: "3am and the board is alive",                               daysAgo: 12  }
-    { handle: "BYTE_RUNNER",  text: "just found an easter egg in the system",                   daysAgo: 10  }
-    { handle: "NEON_PULSE",   text: "wer ist noch wach? :)",                                    daysAgo: 8   }
-    { handle: "DARK_MATTER",  text: "the SysOp never sleeps",                                   daysAgo: 5   }
-    { handle: "NIGHTOWL",     text: "some handles just disappear. nobody asks why.",             daysAgo: 3   }
-    { handle: "BYTE_RUNNER",  text: "nostalgia is a hell of a drug",                            daysAgo: 2   }
-    { handle: "CIRCUIT_JANE", text: "logging off for the night... if it IS night",               daysAgo: 1   }
+    { handle: "PHANTOM_X",    text: "something is watching",                                          daysAgo: 220 }
+    { handle: "PHANTOM_X",    text: "found something in the logs. probably nothing.",                  daysAgo: 200 }
+    { handle: "DARK_MATTER",  text: "been on this board longer than some of you have been alive",      daysAgo: 380 }
+    { handle: "VOID_WALKER",  text: "connections are temporary",                                      daysAgo: 210 }
+    { handle: "VOID_WALKER",  text: "we are all just text on a screen",                               daysAgo: 150 }
+    { handle: "VOID_WALKER",  text: "the cursor blinks. the void stares back.",                       daysAgo: 130 }
+    { handle: "MERCURY_R",    text: "first day here. feels weird but cool.",                           daysAgo: 105 }
+    { handle: "MERCURY_R",    text: "so many questions. so few answers.",                              daysAgo: 95  }
+    { handle: "NIGHTOWL",     text: "another late night on the board",                                daysAgo: 160 }
+    { handle: "NIGHTOWL",     text: "3am and the board is alive. or something is.",                    daysAgo: 55  }
+    { handle: "NIGHTOWL",     text: "the glow of the terminal is the only light I need",              daysAgo: 25  }
+    { handle: "BYTE_RUNNER",  text: "this place feels like home",                                     daysAgo: 120 }
+    { handle: "BYTE_RUNNER",  text: "just scored a Trinitron. life is good.",                          daysAgo: 85  }
+    { handle: "BYTE_RUNNER",  text: "nostalgia is a hell of a drug",                                  daysAgo: 40  }
+    { handle: "BYTE_RUNNER",  text: "retro computing: where the hardware outlasts the company",        daysAgo: 10  }
+    { handle: "DARK_MATTER",  text: "been here since the beginning. seen things.",                     daysAgo: 90  }
+    { handle: "DARK_MATTER",  text: "the SysOp never sleeps",                                         daysAgo: 45  }
+    { handle: "DARK_MATTER",  text: "some boards go dark. this one just gets darker.",                 daysAgo: 20  }
+    { handle: "NEON_PULSE",   text: "the 90s called, they want their BBS back <3",                    daysAgo: 100 }
+    { handle: "NEON_PULSE",   text: "wer ist noch wach? :)",                                          daysAgo: 60  }
+    { handle: "NEON_PULSE",   text: "Rust borrow checker: 1, NEON_PULSE: 0",                          daysAgo: 30  }
+    { handle: "NEON_PULSE",   text: "berlin says guten abend to the underground",                     daysAgo: 8   }
+    { handle: "CIRCUIT_JANE", text: "does anyone else hear the modem sounds in their dreams?",         daysAgo: 70  }
+    { handle: "CIRCUIT_JANE", text: "TradeWars 2002: still the greatest game ever made. fight me.",    daysAgo: 35  }
+    { handle: "CIRCUIT_JANE", text: "logging off for the night... if it IS night",                     daysAgo: 3   }
   ]
 
-  // ─── Last Callers ────────────────────────────────────────────────────────────
-  // 20 entries showing activity over the last 30 days.
-  // PHANTOM_X, VOID_WALKER, and MERCURY_R are absent — they're gone.
+  // ─── Last Callers ──────────────────────────────────────────────────────────────
+  // 30 entries showing activity patterns.
+  // PHANTOM_X, VOID_WALKER, and MERCURY_R appear in older entries only.
+  // AXIOM appears at odd hours.
 
   lastCallers: [
     // Recent (0-3 days)
-    { handle: "NIGHTOWL",    location: "Portland, OR",        node: 1, daysAgo: 0 }
-    { handle: "BYTE_RUNNER",  location: "Seattle, WA",         node: 2, daysAgo: 0 }
-    { handle: "AXIOM",        location: "Unknown",             node: 0, daysAgo: 1 }
-    { handle: "NEON_PULSE",   location: "Berlin, DE",          node: 1, daysAgo: 1 }
-    { handle: "DARK_MATTER",  location: "San Francisco, CA",   node: 3, daysAgo: 2 }
-    { handle: "BYTE_RUNNER",  location: "Seattle, WA",         node: 2, daysAgo: 3 }
+    { handle: "NIGHTOWL",     location: "Portland, OR",         node: 1, daysAgo: 0 }
+    { handle: "BYTE_RUNNER",  location: "Seattle, WA",          node: 2, daysAgo: 0 }
+    { handle: "AXIOM",        location: "Unknown",              node: 0, daysAgo: 1 }
+    { handle: "NEON_PULSE",   location: "Berlin, DE",           node: 1, daysAgo: 1 }
+    { handle: "DARK_MATTER",  location: "San Francisco, CA",    node: 3, daysAgo: 2 }
+    { handle: "BYTE_RUNNER",  location: "Seattle, WA",          node: 2, daysAgo: 3 }
 
     // Recent-ish (4-7 days)
-    { handle: "NIGHTOWL",    location: "Portland, OR",        node: 1, daysAgo: 4 }
-    { handle: "AXIOM",        location: "Unknown",             node: 0, daysAgo: 5 }
-    { handle: "NEON_PULSE",   location: "Berlin, DE",          node: 1, daysAgo: 5 }
-    { handle: "DARK_MATTER",  location: "San Francisco, CA",   node: 2, daysAgo: 6 }
-    { handle: "BYTE_RUNNER",  location: "Seattle, WA",         node: 1, daysAgo: 7 }
+    { handle: "NIGHTOWL",     location: "Portland, OR",         node: 1, daysAgo: 4 }
+    { handle: "AXIOM",        location: "Unknown",              node: 0, daysAgo: 5 }
+    { handle: "NEON_PULSE",   location: "Berlin, DE",           node: 1, daysAgo: 5 }
+    { handle: "DARK_MATTER",  location: "San Francisco, CA",    node: 2, daysAgo: 6 }
+    { handle: "BYTE_RUNNER",  location: "Seattle, WA",          node: 1, daysAgo: 7 }
 
     // Mid-range (8-20 days)
-    { handle: "CIRCUIT_JANE", location: "Toronto, CA",         node: 2, daysAgo: 8  }
-    { handle: "NIGHTOWL",    location: "Portland, OR",        node: 1, daysAgo: 10 }
-    { handle: "AXIOM",        location: "Unknown",             node: 0, daysAgo: 12 }
-    { handle: "BYTE_RUNNER",  location: "Seattle, WA",         node: 3, daysAgo: 14 }
-    { handle: "DARK_MATTER",  location: "San Francisco, CA",   node: 1, daysAgo: 16 }
-    { handle: "NEON_PULSE",   location: "Berlin, DE",          node: 2, daysAgo: 18 }
+    { handle: "CIRCUIT_JANE", location: "Toronto, CA",          node: 2, daysAgo: 8  }
+    { handle: "NIGHTOWL",     location: "Portland, OR",         node: 1, daysAgo: 10 }
+    { handle: "AXIOM",        location: "Unknown",              node: 0, daysAgo: 12 }
+    { handle: "BYTE_RUNNER",  location: "Seattle, WA",          node: 3, daysAgo: 14 }
+    { handle: "DARK_MATTER",  location: "San Francisco, CA",    node: 1, daysAgo: 16 }
+    { handle: "NEON_PULSE",   location: "Berlin, DE",           node: 2, daysAgo: 18 }
+    { handle: "AXIOM",        location: "Unknown",              node: 0, daysAgo: 19 }
 
     // Older (20-30 days)
-    { handle: "NIGHTOWL",    location: "Portland, OR",        node: 1, daysAgo: 22 }
-    { handle: "BYTE_RUNNER",  location: "Seattle, WA",         node: 2, daysAgo: 25 }
-    { handle: "AXIOM",        location: "Unknown",             node: 0, daysAgo: 28 }
+    { handle: "NIGHTOWL",     location: "Portland, OR",         node: 1, daysAgo: 22 }
+    { handle: "BYTE_RUNNER",  location: "Seattle, WA",          node: 2, daysAgo: 25 }
+    { handle: "CIRCUIT_JANE", location: "Toronto, CA",          node: 1, daysAgo: 26 }
+    { handle: "AXIOM",        location: "Unknown",              node: 0, daysAgo: 28 }
+    { handle: "DARK_MATTER",  location: "San Francisco, CA",    node: 3, daysAgo: 30 }
+
+    // Older still (showing disappeared users, 60-180+ days)
+    { handle: "MERCURY_R",    location: "Chicago, IL",          node: 2, daysAgo: 93  }
+    { handle: "MERCURY_R",    location: "Chicago, IL",          node: 1, daysAgo: 100 }
+    { handle: "VOID_WALKER",  location: "",                     node: 1, daysAgo: 125 }
+    { handle: "VOID_WALKER",  location: "",                     node: 3, daysAgo: 140 }
+    { handle: "PHANTOM_X",    location: "Austin, TX",           node: 2, daysAgo: 190 }
+    { handle: "PHANTOM_X",    location: "Austin, TX",           node: 1, daysAgo: 210 }
+    { handle: "AXIOM",        location: "Unknown",              node: 0, daysAgo: 365 }
   ]
 
-  // ─── Bulletins ────────────────────────────────────────────────────────────────
+  // ─── Bulletins ──────────────────────────────────────────────────────────────────
 
   bulletins: [
     {
@@ -889,7 +4066,7 @@
     }
     {
       number: 2
-      title: "System Rules & Etiquette"
+      title: "System Rules and Guidelines"
       body:
         '''
         |09===============================================
@@ -901,6 +4078,8 @@
         |153.|07 One account per person.
         |154.|07 Don't share your password.
         |155.|07 Report bugs to the SysOp.
+        |156.|07 Do not browse system directories.
+        |157.|07 Do not discuss system operations.
 
         |09-----------------------------------------------
 
@@ -921,6 +4100,7 @@
         |08permanent access revocation.
 
         |12There are no second chances.
+        |12There are no exceptions.
         '''
     }
     {
@@ -939,11 +4119,14 @@
         |09-----------------------------------------------
 
         |07The SysOp of The Neon Underground has been
-        |07maintaining this board since its inception.
+        |07maintaining this board since its inception
+        |07in 1994.
 
         |08Not much is known about AXIOM. They rarely
         |08post outside of system announcements. They
-        |08don't engage in casual conversation.
+        |08don't engage in casual conversation. They
+        |08don't attend meetups or swap meets. They
+        |08have never been seen on any other board.
 
         |07Some say the board |11is|07 the SysOp.
         |08Some say the SysOp |11is|08 the board.
@@ -953,6 +4136,88 @@
         |14will be seen.
 
         |08Everything here is seen.
+
+        |09===============================================
+        '''
+    }
+    {
+      number: 4
+      title: "Maintenance Schedule"
+      body:
+        '''
+        |09===============================================
+        |11  M A I N T E N A N C E
+        |09===============================================
+
+        |07The system undergoes scheduled maintenance
+        |07every |15Friday|07 from |1500:00|07 to |1503:00|07 local
+        |07server time.
+
+        |09-----------------------------------------------
+
+        |08During this window:
+
+        |08- All active sessions will be terminated
+        |08- New connections will not be accepted
+        |08- The system will not respond to probes
+        |08- All queued messages will be held
+
+        |09-----------------------------------------------
+
+        |14Do not attempt to connect during this time.
+        |14Do not attempt to monitor the system during
+        |14this time.
+
+        |08Maintenance activities include:
+        |08- Database optimization
+        |08- Log rotation
+        |08- Security audits
+        |08- System calibration
+
+        |07The board will return to normal operation
+        |07automatically at 03:00.
+
+        |12This schedule is non-negotiable.
+
+        |08               — |15AXIOM|08, SysOp
+        '''
+    }
+    {
+      number: 5
+      title: "Community Directory"
+      body:
+        '''
+        |09===============================================
+        |11  C O M M U N I T Y   D I R E C T O R Y
+        |09===============================================
+
+        |07Active Users:
+
+        |15AXIOM          |08Unknown          |07SysOp
+        |15NIGHTOWL       |08Portland, OR     |07Regular
+        |15BYTE_RUNNER     |08Seattle, WA      |07Regular
+        |15NEON_PULSE      |08Berlin, DE       |07Regular
+        |15CIRCUIT_JANE    |08Toronto, CA      |07Sporadic
+        |15DARK_MATTER     |08San Francisco    |07Old-timer
+
+        |09-----------------------------------------------
+
+        |08Inactive Users:
+
+        |08PHANTOM_X       Austin, TX        |12Last seen:
+        |12                                  ~6 months ago
+        |08VOID_WALKER     Unknown           |12Last seen:
+        |12                                  ~4 months ago
+        |08MERCURY_R       Chicago, IL       |12Last seen:
+        |12                                  ~3 months ago
+
+        |09-----------------------------------------------
+
+        |07If you know any of the inactive users,
+        |07please ask them to check in. The community
+        |07misses them.
+
+        |08...or at least, we assume we do.
 
         |09===============================================
         '''
