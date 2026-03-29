@@ -316,6 +316,87 @@ export async function summarizeConversation(
   }
 }
 
+// ─── NPC Board Post Generation ──────────────────────────────────────────────
+
+const HAIKU_MODEL = 'claude-haiku-4-20250414';
+const MAX_NPC_POST_TOKENS = 200;
+
+function getHaikuModel() {
+  return anthropic(HAIKU_MODEL);
+}
+
+export interface NPCPostResult {
+  text: string;
+  subject: string;
+}
+
+export async function generateNPCPost(
+  userId: number,
+  npcHandle: string,
+  areaTag: string,
+  threadSubject: string,
+  recentMessages: Array<{ from: string; body: string }>,
+  context: {
+    npcPersonality: string;
+    npcRole: string;
+    chapter: string;
+    language: string;
+    playerHandle: string;
+  },
+): Promise<NPCPostResult> {
+  const npcPromptTemplate = getAIPrompt('npcBoardPostPrompt');
+
+  const recentText = recentMessages
+    .slice(-5)
+    .map(m => `[${m.from}]: ${m.body}`)
+    .join('\n\n');
+
+  const vars: Record<string, string | number> = {
+    npcHandle,
+    npcPersonality: context.npcPersonality,
+    npcRole: context.npcRole,
+    areaTag,
+    threadSubject,
+    recentMessages: recentText,
+    chapter: context.chapter,
+    language: context.language === 'de' ? 'German' : 'English',
+    playerHandle: context.playerHandle,
+  };
+
+  const systemPrompt = interpolateTemplate(npcPromptTemplate, vars);
+
+  try {
+    const result = await generateText({
+      model: getHaikuModel(),
+      system: systemPrompt,
+      messages: [{
+        role: 'user',
+        content: context.language === 'de'
+          ? `Schreibe eine kurze Antwort als ${npcHandle} auf den Thread "${threadSubject}" im ${areaTag} Board.`
+          : `Write a short reply as ${npcHandle} to the thread "${threadSubject}" in the ${areaTag} board.`,
+      }],
+      maxTokens: MAX_NPC_POST_TOKENS,
+    });
+
+    const text = result.text || `— ${npcHandle}`;
+
+    // Generate a reply subject (keep original subject with Re: prefix if not already)
+    const subject = threadSubject.startsWith('Re: ')
+      ? threadSubject
+      : `Re: ${threadSubject}`;
+
+    log.info({ userId, npcHandle, areaTag, subject }, 'NPC board post generated');
+    return { text, subject };
+  } catch (err) {
+    log.error({ error: err, userId, npcHandle }, 'NPC board post generation failed');
+    // Return a fallback in-character response
+    return {
+      text: `— ${npcHandle}`,
+      subject: threadSubject.startsWith('Re: ') ? threadSubject : `Re: ${threadSubject}`,
+    };
+  }
+}
+
 // ─── Exports for testing ─────────────────────────────────────────────────────
 
 export { buildKillerSystemPrompt as _buildKillerSystemPrompt };

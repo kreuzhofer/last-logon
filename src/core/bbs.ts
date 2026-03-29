@@ -13,7 +13,8 @@ import { getDb } from './database.js';
 import { eventBus } from './events.js';
 import type { SSHConnection } from '../server/connection.js';
 import * as messageService from '../messages/message-service.js';
-import { padRight, center, formatDate, formatDateTime, truncate, wordWrap, formatNumber } from '../utils/string-utils.js';
+import { padRight, center, formatDate, formatDateTime, truncate, wordWrap, formatNumber, stripAnsi } from '../utils/string-utils.js';
+import { parsePipeCodes, stripPipeCodes } from '../utils/pipe-codes.js';
 import { terminalScreen, journalScreen, processAutoBeats, showChapterTransition } from '../game/index.js';
 import {
   getPlayerGame,
@@ -34,6 +35,7 @@ import { injectGhostOneLiners, checkAndSendNPCMessages } from '../game/message-b
 import { seedPlayerContent } from '../game/content-seeder.js';
 import { connectionEffect, displayScriptedText, sleep } from '../game/narrative.js';
 import { runHiddenTerminal } from '../game/hidden-terminal.js';
+import { gamesMenu } from '../games/index.js';
 import { getChapter } from '../game/base-script-loader.js';
 import type { PlayerGame } from '@prisma/client';
 import type { ChapterTag } from '../game/game-types.js';
@@ -675,7 +677,7 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
       case 'L': await lastCallersModule(game!.id, session, frame); break;
       case 'B': await bulletinsModule(game!.id, session, frame); break;
       case 'V': await votingBoothModule(game!.id, session, frame); break;
-      case 'D': await comingSoon(session, frame, 'Main Menu'); break; // Games — will be wired to mini-games
+      case 'D': if (game) await gamesMenu(session, frame, game); break;
       case 'T': if (game) await terminalScreen(session, frame, game); break;
       case 'F':
         if (game) {
@@ -1399,7 +1401,6 @@ async function bulletinsModule(pgId: number, session: Session, frame: ScreenFram
 
       // Render body with pipe codes
       const bodyText = bulletin.body ?? '';
-      const { parsePipeCodes } = await import('../utils/pipe-codes.js');
       const bodyLines = bodyText.split('\n');
       for (const line of bodyLines) {
         if (frame.remainingRows <= 2) break;
