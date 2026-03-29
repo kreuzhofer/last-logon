@@ -307,6 +307,7 @@ model PlayerGame {
   id                 Int      @id @default(autoincrement())
   userId             Int      @unique @map("user_id")
   language           String   @default("en")
+  timezone           String   @default("UTC")
   chapter            String   @default("prologue")
   phase              String   @default("prologue")
   killerAlias        String   @default("AXIOM") @map("killer_alias")

@@ -15,6 +15,7 @@ export interface IConnection {
   screenWidth: number;
   screenHeight: number;
   terminalType: string;
+  detectedTimezone?: string;  // Auto-detected from web clients
 
   write(data: string | Buffer): void;
   onData(callback: (data: Buffer) => void): void;

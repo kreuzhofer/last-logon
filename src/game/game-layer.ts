@@ -46,12 +46,13 @@ export async function getPlayerGame(userId: number): Promise<PlayerGame | null> 
   return db.playerGame.findUnique({ where: { userId } });
 }
 
-export async function createPlayerGame(userId: number, language: string): Promise<PlayerGame> {
+export async function createPlayerGame(userId: number, language: string, timezone = 'UTC'): Promise<PlayerGame> {
   const db = getDb();
   return db.playerGame.create({
     data: {
       userId,
       language,
+      timezone,
       chapter: 'prologue',
       phase: 'prologue',
       killerAlias: 'AXIOM',

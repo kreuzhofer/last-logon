@@ -26,6 +26,7 @@ export class WebSocketConnection implements IConnection {
   screenWidth: number;
   screenHeight: number;
   terminalType: string;
+  detectedTimezone?: string;
 
   constructor(
     readonly nodeNumber: number,
@@ -47,6 +48,9 @@ export class WebSocketConnection implements IConnection {
         } else if (msg.type === 'resize' && typeof msg.cols === 'number' && typeof msg.rows === 'number') {
           this.screenWidth = msg.cols;
           this.screenHeight = msg.rows;
+          if (typeof msg.timezone === 'string' && msg.timezone) {
+            this.detectedTimezone = msg.timezone;
+          }
           for (const cb of this.resizeCallbacks) cb(msg.cols, msg.rows);
         }
       } catch {

@@ -294,7 +294,8 @@
       ws.onopen = function() {
         statusEl.textContent = 'Connected';
         statusEl.className = 'connected';
-        ws.send(JSON.stringify({ type: 'resize', cols: COLS, rows: ROWS }));
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+        ws.send(JSON.stringify({ type: 'resize', cols: COLS, rows: ROWS, timezone: tz }));
         term.focus();
       };
 

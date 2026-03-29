@@ -541,8 +541,28 @@ async function handleNewUser(session: Session, frame: ScreenFrame): Promise<bool
     const langChoice = await terminal.readHotkey(['E', 'D']);
     const language = langChoice === 'D' ? 'de' : 'en';
 
+    // Timezone selection
+    let timezone = 'UTC';
+    const detectedTz = session.connection.detectedTimezone;
+    if (detectedTz) {
+      // Web client auto-detected timezone
+      timezone = detectedTz;
+      frame.writeContentLine(c(Color.DarkGray, `  Timezone detected: ${detectedTz}`));
+    } else {
+      // SSH client — ask user to type their timezone
+      frame.skipLine();
+      frame.writeContentLine(c(Color.LightCyan, 'Your timezone (e.g., Europe/Berlin, America/New_York, UTC):'));
+      terminal.moveTo(frame.currentRow, frame.contentLeft);
+      terminal.write(c(Color.LightCyan, '> ') + c(Color.White, ''));
+      const tzInput = await terminal.readLine({ maxLength: 40 });
+      frame.setContentRow(frame.currentRow - frame.contentTop + 1);
+      if (tzInput && tzInput.trim()) {
+        timezone = tzInput.trim();
+      }
+    }
+
     // Initialize game state
-    const game = await createPlayerGame(user.id, language);
+    const game = await createPlayerGame(user.id, language, timezone);
     await seedPlayerContent(game.id);
 
     await db.lastCaller.create({
