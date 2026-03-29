@@ -327,6 +327,12 @@ export async function checkChapterProgression(game: PlayerGame): Promise<boolean
     phase,
   });
 
+  // Unlock features defined in the new chapter
+  const nextChapterDef = getChapter(nextChapter as ChapterTag);
+  if (nextChapterDef?.features?.length) {
+    await unlockFeatures(game, nextChapterDef.features);
+  }
+
   await addGameEvent(game, 'chapter_change', `Advanced to ${nextChapter}`, { from: game.chapter, to: nextChapter }, 10);
   log.info({ gameId: game.id, from: game.chapter, to: nextChapter }, 'Chapter advanced');
 
