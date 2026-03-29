@@ -145,6 +145,13 @@ export async function unlockFeatures(game: PlayerGame, features: string[]): Prom
   log.info({ gameId: game.id, features }, 'Features unlocked');
 }
 
+export async function revokeFeature(game: PlayerGame, feature: string): Promise<void> {
+  const current = parseJsonArray(game.unlockedFeatures);
+  const updated = current.filter(f => f !== feature && f !== '*');
+  await updatePlayerGame(game.id, { unlockedFeatures: JSON.stringify(updated) });
+  log.info({ gameId: game.id, feature }, 'Feature revoked');
+}
+
 // ─── Clue Management ─────────────────────────────────────────────────────────
 
 export async function addClue(game: PlayerGame, clueTag: string): Promise<void> {
