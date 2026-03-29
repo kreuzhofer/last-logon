@@ -498,3 +498,99 @@ export async function createNotification(userId: number, type: string, content: 
     data: { userId, type, content },
   });
 }
+
+// ─── Adaptive Difficulty (tracked in playerProfile JSON) ────────────────────
+
+export interface PlayerSkillProfile {
+  puzzlesSolvedCount: number;
+  puzzlesFailedCount: number;
+  averageSolveTimeMs: number;    // Average time to solve puzzles
+  hintsUsedTotal: number;
+  attemptsPerPuzzle: number;     // Average attempts per puzzle
+  responseSpeed: 'fast' | 'medium' | 'slow';
+  estimatedSkill: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  lastUpdated: string;           // ISO datetime
+}
+
+export function getPlayerSkillProfile(game: PlayerGame): PlayerSkillProfile {
+  const profile = parseJsonObject(game.playerProfile);
+  const skill = profile.skill as PlayerSkillProfile | undefined;
+  if (skill) return skill;
+  return {
+    puzzlesSolvedCount: 0,
+    puzzlesFailedCount: 0,
+    averageSolveTimeMs: 0,
+    hintsUsedTotal: 0,
+    attemptsPerPuzzle: 0,
+    responseSpeed: 'medium',
+    estimatedSkill: 'intermediate',
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+export async function updatePlayerSkillProfile(game: PlayerGame, update: Partial<PlayerSkillProfile>): Promise<void> {
+  const profile = parseJsonObject(game.playerProfile);
+  const current = getPlayerSkillProfile(game);
+  const updated = { ...current, ...update, lastUpdated: new Date().toISOString() };
+
+  // Auto-estimate skill level based on metrics
+  if (updated.puzzlesSolvedCount >= 3) {
+    const solveRate = updated.puzzlesSolvedCount / (updated.puzzlesSolvedCount + updated.puzzlesFailedCount);
+    const hintsRate = updated.hintsUsedTotal / Math.max(1, updated.puzzlesSolvedCount);
+
+    if (solveRate > 0.9 && hintsRate < 0.5 && updated.attemptsPerPuzzle < 3) {
+      updated.estimatedSkill = 'expert';
+    } else if (solveRate > 0.7 && hintsRate < 1.5) {
+      updated.estimatedSkill = 'advanced';
+    } else if (solveRate > 0.4) {
+      updated.estimatedSkill = 'intermediate';
+    } else {
+      updated.estimatedSkill = 'beginner';
+    }
+  }
+
+  profile.skill = updated;
+  await updatePlayerGame(game.id, { playerProfile: JSON.stringify(profile) });
+}
+
+export function getDifficultyMultiplier(game: PlayerGame): number {
+  const skill = getPlayerSkillProfile(game);
+  switch (skill.estimatedSkill) {
+    case 'beginner': return 0.5;    // Easier puzzles, more hints
+    case 'intermediate': return 1.0; // Standard difficulty
+    case 'advanced': return 1.5;     // Harder, fewer hints
+    case 'expert': return 2.0;       // Maximum challenge
+    default: return 1.0;
+  }
+}
+
+// ─── Story Threads (tracked in PlayerGame.flags) ────────────────────────────
+
+export interface StoryThread {
+  areaTag: string;
+  subject: string;
+  npcHandles: string[];
+  hintsDropped: string[];
+  playerPostCount: number;
+  lastNPCResponseAt: string;
+  lastPlayerPostAt: string;
+  createdAt: string;
+}
+
+export interface StoryThreads {
+  threads: StoryThread[];
+  lastNPCResponseAt: string | null;
+}
+
+export function getStoryThreads(game: PlayerGame): StoryThreads {
+  const flags = parseJsonObject(game.flags);
+  const raw = flags.storyThreads as StoryThreads | undefined;
+  if (raw && Array.isArray(raw.threads)) return raw;
+  return { threads: [], lastNPCResponseAt: null };
+}
+
+export async function updateStoryThreads(game: PlayerGame, threads: StoryThreads): Promise<void> {
+  const flags = parseJsonObject(game.flags);
+  flags.storyThreads = threads;
+  await updatePlayerGame(game.id, { flags: JSON.stringify(flags) });
+}
