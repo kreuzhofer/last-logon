@@ -187,54 +187,49 @@ Key pillars:
 
 ### P1 — The Living BBS (Next Priority)
 
-- [ ] **5x seed content** — Expand from ~40 to ~200 messages across all boards
-  - Deeper retro computing threads, more BBS nostalgia, richer NPC personalities
-  - Date seed messages relative to player's registration (not absolute dates)
-  - More message areas with active discussions
-  - Each NPC should have a distinct voice and posting style
+- [x] **5x seed content** — Done. 192 messages, 25 one-liners, 30 callers, 5 bulletins, 3 polls.
+- [x] **Convert story beats to natural messages** — Done. Beats delivered as personal mail from in-character senders.
+- [x] **Real-time notification system** — Done. Animated braille spinner mail indicator in top border.
+- [x] **Bulletins screen** — Done. [B] with lightbar and pipe code rendering.
+- [x] **Responsive NPC AI posting** — Done (basic). Scheduler checks every 3 min, generates AI responses via Haiku.
+- [x] **Story orchestrator foundation** — Done. StoryThread tracking in PlayerGame flags.
 
-- [ ] **Convert story beats to natural messages** — No more cutscene interruptions
-  - "People disappeared" beats → personal message from a worried NPC
-  - "Police investigation" → post in local.general from an NPC who saw something
-  - All story progression delivered through BBS content, not splash screens
-  - Player discovers the story by reading the BBS, not being shown it
+- [ ] **NPC personality & timezone system** — NPCs should have personal schedules
+  - NIGHTOWL: posts 22:00-04:00 UTC, philosophical, always online late
+  - BYTE_RUNNER: posts 17:00-23:00 US Eastern, enthusiastic, frequent
+  - DARK_MATTER: random times, old-timer, posts once every few days
+  - CIRCUIT_JANE: posts 09:00-17:00 US Pacific, dry humor, sporadic
+  - NEON_PULSE: posts 18:00-02:00 CET, young coder, mixes German
+  - Each NPC has a probability curve per hour — scheduler picks based on local time
 
-- [ ] **Real-time notification system** — New mail alerts during BBS use
-  - Bottom bar flashes `[NEW MAIL]` when personal message arrives
-  - Hotkey (e.g., `!`) to read immediately or dismiss
-  - Blinking `[*]` indicator in top-right corner of ScreenFrame until mail is read
-  - Replaces the login-only new message scan
+- [ ] **Unanswered post tracking** — If no NPC responded to a player post, respond regardless of age
+  - Track `lastNPCResponseToPostId` per thread
+  - On each scheduler tick, find unanswered player posts (even days old)
+  - Guarantee at least one NPC response per player post within 24 hours
 
-- [ ] **Responsive NPC AI posting** — NPCs respond to player posts in near-real-time
-  - When player posts in a board, NPCs may respond within 5-30 minutes (randomized)
-  - Activity peaks during evening/night hours (server time = user time)
-  - Each NPC has personality constraints (NIGHTOWL posts late, BYTE_RUNNER is enthusiastic, DARK_MATTER is philosophical)
-  - Use Haiku for ambient NPC posts (cheap), Sonnet for story-critical moments
-  - Scheduler checks every 5-15 minutes during active hours (not hourly)
+- [ ] **New NPCs joining over time** — Community grows as chapters progress
+  - Chapter 2: NEW_WAVE joins (enthusiastic newbie, asks questions)
+  - Chapter 3: STATIC_NOISE appears (cryptic, hints at knowing something)
+  - Chapter 4: GHOST_ADMIN appears briefly (posts then vanishes — is it AXIOM?)
+  - NPCs seeded when chapter advances, start posting via scheduler
 
-- [ ] **Story orchestrator** — AI-driven narrative coherence
-  - Tracks ongoing discussion threads the AI is managing
-  - Knows what hints have been dropped, what NPCs have said, what the player has read
-  - Feeds context to NPC AI so responses build on each other
-  - Posts become subtly more unsettling as chapters progress
-  - Normal retro discussion threads start having weird tangents about system glitches and disappearances
+- [ ] **ANSI art integration** — Wire art files into screens
+  - Art files exist in `art/` (welcome.ans, login.ans, chapter1.ans, etc.)
+  - Art viewer module exists (`src/terminal/art-viewer.ts`)
+  - Need to call `displayArt()` in welcome screen, login, chapter transitions
+  - Need hand-crafted quality art — current files are basic
 
-- [ ] **Bulletins screen** — Implement [B] Bulletins UI
-  - Display per-player bulletins with pipe code rendering
-  - Game injects new bulletins as story progresses (strange announcements, news of disappearances)
+- [ ] **Dynamic users.db** — Terminal `/system/users.db` should show the player's own handle
+  - Generate file content at runtime including current user
+  - Show player as newest entry in the user database
 
 ### P2 — Polish & Depth
 
-- [ ] **NPC AI conversation responses** — Players can reply to NPC messages and get AI-generated replies
-  - Use existing `npcSystemPrompt` template
+- [ ] **NPC AI conversation responses** — Players can reply to NPC mail and get AI-generated replies
   - Wire into mail system (player writes reply → AI generates NPC response)
 
-- [ ] **ANSI art** — Welcome screens, chapter transitions, killer messages
-  - `art/` directory exists but is empty
-  - Classic BBS aesthetic, essential for the retro feel
-
-- [ ] **Polls / voting booth UI** — DB models exist, need screen implementation
-  - Game can use polls as story devices (rigged polls, suspicious results)
+- [ ] **Polls / voting booth** — Done (basic). Need game-driven polls that change per chapter.
+  - Killer-rigged polls, suspicious results
 
 - [ ] **Adaptive difficulty system** — Killer assesses player skill and adjusts challenge accordingly
   - Track solve speed, hint usage, attempt counts, response quality across puzzles
