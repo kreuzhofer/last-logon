@@ -288,7 +288,7 @@ export async function processBeat(
       const sender = senderMap[beat.tag] ?? 'SYSTEM';
       const subject = beat.description ?? beat.tag;
 
-      await sendMail(game.id, 0, sender, session.handle, subject, plainText);
+      await sendMail(game.id, null, sender, session.handle, subject, plainText);
 
       // Update the mail indicator
       frame.hasNewMail = true;
