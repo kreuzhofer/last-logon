@@ -84,17 +84,16 @@ function shouldNPCRespond(playerHour: number): boolean {
   let probability: number;
 
   if (playerHour >= 18 || playerHour < 3) {
-    // Evening/night — prime BBS time
-    probability = 0.7;
+    probability = 0.9;  // Evening/night — almost always respond
   } else if (playerHour >= 6 && playerHour < 18) {
-    // Daytime — less active
-    probability = 0.3;
+    probability = 0.6;  // Daytime — more than half the time
   } else {
-    // Early morning (03:00-06:00) — very quiet
-    probability = 0.1;
+    probability = 0.3;  // Early morning
   }
 
-  return Math.random() < probability;
+  const roll = Math.random();
+  log.info({ playerHour, probability, roll, respond: roll < probability }, 'NPC response RNG');
+  return roll < probability;
 }
 
 /**
