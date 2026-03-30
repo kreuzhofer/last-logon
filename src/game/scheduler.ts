@@ -10,10 +10,11 @@ import type { PlayerGame } from '@prisma/client';
 
 const log = createChildLogger('game-scheduler');
 
-const CHECK_INTERVAL_MS = 10 * 60 * 1000;  // Check every 10 minutes
+const CHECK_INTERVAL_MS = 3 * 60 * 1000;  // Check every 3 minutes for responsive feel
 const INACTIVITY_CHECK_INTERVAL_MS = 60 * 60 * 1000;  // Inactivity check every hour
 const DEFAULT_INACTIVITY_HOURS = 48;
-const NPC_RESPONSE_COOLDOWN_MS = 30 * 60 * 1000;  // 30 minutes between NPC responses per player
+const NPC_RESPONSE_COOLDOWN_MS = 15 * 60 * 1000;  // 15 minutes between NPC responses per player
+const RECENT_MESSAGE_WINDOW_MS = 60 * 60 * 1000;  // Look back 1 hour for player messages
 
 let intervalHandle: ReturnType<typeof setInterval> | null = null;
 let lastInactivityCheck = 0;
@@ -38,7 +39,7 @@ export function startGameScheduler(): void {
   }, CHECK_INTERVAL_MS);
 
   lastInactivityCheck = Date.now();
-  log.info('Game scheduler started (10-minute interval)');
+  log.info('Game scheduler started (3-minute interval)');
 }
 
 export function stopGameScheduler(): void {
@@ -102,7 +103,7 @@ function shouldNPCRespond(playerHour: number): boolean {
  */
 async function checkForNPCResponses(): Promise<void> {
   const db = getDb();
-  const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+  const lookbackTime = new Date(Date.now() - RECENT_MESSAGE_WINDOW_MS);
 
   // Find active games (not completed, not prologue) that have users
   const activeGames = await db.playerGame.findMany({
@@ -115,7 +116,7 @@ async function checkForNPCResponses(): Promise<void> {
 
   for (const game of activeGames) {
     try {
-      await processGameForNPCResponse(game as PlayerGame & { user: { handle: string; id: number } }, thirtyMinAgo);
+      await processGameForNPCResponse(game as PlayerGame & { user: { handle: string; id: number } }, lookbackTime);
     } catch (err) {
       log.error({ error: err, gameId: game.id }, 'Failed to process game for NPC response');
     }
@@ -159,8 +160,11 @@ async function processGameForNPCResponse(
   });
 
   if (recentPlayerMessages.length === 0) {
-    return; // No recent activity on public boards
+    log.debug({ gameId: game.id }, 'No recent player messages on public boards');
+    return;
   }
+
+  log.info({ gameId: game.id, messageCount: recentPlayerMessages.length, latestSubject: recentPlayerMessages[0]?.subject }, 'Found recent player messages');
 
   // Get the player's local hour for probability + NPC selection
   const playerHour = getPlayerLocalHour(game.timezone);
