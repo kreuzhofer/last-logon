@@ -277,7 +277,7 @@ export async function processBeat(
       session.terminal.moveTo(frame.currentRow, frame.contentLeft);
       await session.terminal.pause();
     } else {
-      // Deliver as personal mail — feels natural within the BBS
+      // Deliver as personal mail — in-character subjects, not meta descriptions
       const senderMap: Record<string, string> = {
         'strange_bulletin': 'SYSTEM',
         'killer_first_contact': game.killerAlias,
@@ -285,8 +285,17 @@ export async function processBeat(
         'npc_threatened': 'D_COLE',
         'npc_in_danger': 'SIGNAL_LOST',
       };
+      const subjectMap: Record<string, string> = {
+        'strange_bulletin': 'News Alert: Missing Persons Update',
+        'killer_first_contact': 'I noticed you',
+        'killer_escalation': 'We need to talk.',
+        'npc_threatened': 'Something is wrong — be careful',
+        'npc_in_danger': 'I think someone is watching me',
+        'last_callers_pattern': 'System Notice: Caller Log Archive',
+        'worried_user_contact': 'Hey, can we talk?',
+      };
       const sender = senderMap[beat.tag] ?? 'SYSTEM';
-      const subject = beat.description ?? beat.tag;
+      const subject = subjectMap[beat.tag] ?? beat.tag;
 
       await sendMail(game.id, null, sender, session.handle, subject, plainText);
 
