@@ -1249,6 +1249,9 @@ async function mailModule(pgId: number, session: Session, frame: ScreenFrame): P
   if (!session.user) return;
   let selectedIndex = 0;
 
+  // Clear mail indicator when entering mail
+  frame.hasNewMail = false;
+
   while (true) {
     const mail = await messageService.getMailForUser(pgId, session.handle, 50);
     const mailAreaId = await messageService.getMailAreaId();

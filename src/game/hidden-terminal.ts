@@ -61,6 +61,56 @@ function getPathString(path: string[]): string {
   return '/' + path.join('/');
 }
 
+// ─── Tab Completion ─────────────────────────────────────────────────────────
+
+const COMMANDS = ['ls', 'cd', 'cat', 'grep', 'pwd', 'whoami', 'help', 'exit', 'quit', 'clear'];
+
+function getCompletions(root: FSNode, currentPath: string[], cluesFound: string[], buffer: string): string[] {
+  const parts = buffer.split(/\s+/);
+
+  // Complete command name
+  if (parts.length <= 1) {
+    const partial = parts[0]?.toLowerCase() ?? '';
+    return COMMANDS.filter(c => c.startsWith(partial)).map(c => c + ' ');
+  }
+
+  // Complete path argument for cd, ls, cat, grep
+  const cmd = parts[0]!.toLowerCase();
+  if (!['cd', 'ls', 'cat', 'grep'].includes(cmd)) return [];
+
+  const argParts = parts.slice(1).join(' ');
+
+  // Split the path argument to find what we're completing
+  const pathSegments = argParts.split('/');
+  const partialName = pathSegments.pop() ?? '';
+  const parentPathStr = pathSegments.join('/');
+
+  // Resolve the parent directory
+  let dirPath: string[];
+  if (argParts.startsWith('/')) {
+    dirPath = parentPathStr ? parentPathStr.split('/').filter(Boolean) : [];
+  } else {
+    dirPath = parentPathStr ? resolvePath(currentPath, parentPathStr) : [...currentPath];
+  }
+
+  const dirNode = findNode(root, dirPath);
+  if (!dirNode || dirNode.type !== 'directory' || !dirNode.children) return [];
+
+  // Find matching children
+  const visibleChildren = dirNode.children.filter(c => isNodeVisible(c, cluesFound));
+  const matches = visibleChildren.filter(c => c.name.startsWith(partialName));
+
+  if (matches.length === 0) return [];
+
+  // Build the completed buffer for each match
+  const prefix = cmd + ' ' + (parentPathStr ? parentPathStr + '/' : (argParts.startsWith('/') ? '/' : ''));
+
+  return matches.map(m => {
+    const suffix = m.type === 'directory' ? m.name + '/' : m.name;
+    return prefix + suffix;
+  });
+}
+
 // ─── Command Handlers ────────────────────────────────────────────────────────
 
 function cmdLs(
@@ -189,7 +239,10 @@ export async function runHiddenTerminal(
         setColor(Color.White) + '$ ' + resetColor(),
       );
 
-      const input = await terminal.readLine({ maxLength: 60 });
+      const input = await terminal.readLineWithCompletion({
+        maxLength: 60,
+        completionFn: (buf) => getCompletions(root, currentPath, cluesFound, buf),
+      });
       frame.setContentRow(frame.currentRow - frame.contentTop + 1);
 
       if (!input) continue;

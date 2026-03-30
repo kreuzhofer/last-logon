@@ -235,6 +235,94 @@ export class Terminal {
   }
 
   /**
+   * readLine with tab completion support.
+   * completionFn receives the current buffer and returns possible completions.
+   */
+  async readLineWithCompletion(options: {
+    maxLength?: number;
+    completionFn: (buffer: string) => string[];
+  }): Promise<string> {
+    const maxLength = options.maxLength ?? 255;
+    let buffer = '';
+
+    while (true) {
+      const key = await this.readKey();
+
+      if (key.type === 'special' && key.value === 'ENTER') {
+        this.write('\r\n');
+        return buffer;
+      }
+
+      if (key.type === 'special' && key.value === 'BACKSPACE') {
+        if (buffer.length > 0) {
+          buffer = buffer.slice(0, -1);
+          this.write('\b \b');
+        }
+        continue;
+      }
+
+      if (key.type === 'ctrl' && key.value === 'C') {
+        this.write('\r\n');
+        return '';
+      }
+
+      if (key.type === 'ctrl' && key.value === 'U') {
+        this.write('\b \b'.repeat(buffer.length));
+        buffer = '';
+        continue;
+      }
+
+      if (key.type === 'special' && key.value === 'TAB') {
+        const completions = options.completionFn(buffer);
+
+        if (completions.length === 1) {
+          // Unique match — complete it
+          const completion = completions[0]!;
+          // Erase current buffer from display
+          this.write('\b \b'.repeat(buffer.length));
+          buffer = completion;
+          this.write(buffer);
+        } else if (completions.length > 1) {
+          // Multiple matches — find common prefix and show options
+          let commonPrefix = completions[0]!;
+          for (const c of completions) {
+            while (commonPrefix.length > 0 && !c.startsWith(commonPrefix)) {
+              commonPrefix = commonPrefix.slice(0, -1);
+            }
+          }
+
+          if (commonPrefix.length > buffer.length) {
+            // Extend to common prefix
+            this.write('\b \b'.repeat(buffer.length));
+            buffer = commonPrefix;
+            this.write(buffer);
+          } else {
+            // Show all matches below the prompt
+            this.write('\r\n');
+            const names = completions.map(c => {
+              const parts = c.split(/\s+/);
+              const lastPart = parts[parts.length - 1] ?? c;
+              // Extract just the filename from the path
+              const segments = lastPart.split('/');
+              return segments[segments.length - 1] ?? lastPart;
+            });
+            this.write(names.join('  ') + '\r\n');
+            // Rewrite the prompt — caller will need to handle this
+            // For now just show the matches and continue
+          }
+        }
+        // No completions = do nothing (beep could go here)
+        continue;
+      }
+
+      if (key.type === 'char' && buffer.length < maxLength) {
+        buffer += key.value;
+        this.write(key.value);
+      }
+    }
+  }
+
+  /**
    * Multi-line text editor within a bounded area.
    * Supports: arrow keys across lines, word wrap, backspace across lines, Enter for newline.
    * Finishes on: two consecutive blank Enter presses, or Escape.
