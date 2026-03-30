@@ -119,11 +119,26 @@ function cmdLs(
   args: string,
   cluesFound: string[],
 ): string[] {
-  const targetPath = args ? resolvePath(currentPath, args) : currentPath;
+  // Parse flags
+  let showLong = false;
+  let showAll = false;
+  let pathArg = '';
+
+  const parts = args.split(/\s+/).filter(Boolean);
+  for (const part of parts) {
+    if (part.startsWith('-')) {
+      if (part.includes('l')) showLong = true;
+      if (part.includes('a')) showAll = true;
+    } else {
+      pathArg = part;
+    }
+  }
+
+  const targetPath = pathArg ? resolvePath(currentPath, pathArg) : currentPath;
   const node = findNode(root, targetPath);
 
   if (!node || node.type !== 'directory') {
-    return [`ls: cannot access '${args || '.'}': No such directory`];
+    return [`ls: cannot access '${pathArg || '.'}': No such directory`];
   }
 
   if (!node.children?.length) {
@@ -131,13 +146,42 @@ function cmdLs(
   }
 
   const lines: string[] = [];
-  for (const child of node.children) {
-    if (!isNodeVisible(child, cluesFound)) continue;
 
-    if (child.type === 'directory') {
-      lines.push(setColor(Color.LightCyan) + child.name + '/' + resetColor());
+  // Show . and .. with -a
+  if (showAll) {
+    if (showLong) {
+      lines.push(setColor(Color.LightCyan) + 'drwxr-xr-x  ' + setColor(Color.White) + 'root  root  ' + setColor(Color.LightCyan) + '.' + resetColor());
+      lines.push(setColor(Color.LightCyan) + 'drwxr-xr-x  ' + setColor(Color.White) + 'root  root  ' + setColor(Color.LightCyan) + '..' + resetColor());
     } else {
-      lines.push(setColor(Color.LightGray) + child.name + resetColor());
+      lines.push(setColor(Color.LightCyan) + '.  ..' + resetColor());
+    }
+  }
+
+  if (showLong) {
+    lines.push(setColor(Color.DarkGray) + 'total ' + node.children.filter(c => showAll || isNodeVisible(c, cluesFound)).length + resetColor());
+  }
+
+  for (const child of node.children) {
+    if (!showAll && !isNodeVisible(child, cluesFound)) continue;
+
+    const isDir = child.type === 'directory';
+    const nameColor = isDir ? Color.LightCyan : Color.LightGray;
+    const suffix = isDir ? '/' : '';
+
+    if (showLong) {
+      const perms = isDir ? 'drwxr-xr-x' : '-rw-r--r--';
+      const size = child.content ? String(child.content.length).padStart(5) : (isDir ? '  4096' : '     0');
+      const owner = child.hidden ? setColor(Color.DarkRed) + 'axiom ' : setColor(Color.White) + 'root  ';
+      const date = 'Mar 15  2026';
+
+      lines.push(
+        setColor(Color.DarkGray) + perms + '  ' +
+        owner + setColor(Color.White) + 'root  ' +
+        setColor(Color.DarkGray) + size + ' ' + date + '  ' +
+        setColor(nameColor) + child.name + suffix + resetColor(),
+      );
+    } else {
+      lines.push(setColor(nameColor) + child.name + suffix + resetColor());
     }
   }
 
