@@ -160,10 +160,57 @@ export function displayChatMessage(
   text: string,
   senderColor: Color = Color.LightCyan,
 ): void {
-  frame.writeContentLine(
-    setColor(senderColor) + sender + setColor(Color.DarkGray) + ': ' +
-    resetColor() + parsePipeCodes(text),
-  );
+  const prefix = sender + ': ';
+  const prefixLen = prefix.length;
+  const maxWidth = frame.contentWidth;
+  const bodyWidth = maxWidth - prefixLen;
+
+  // Strip pipe codes for wrapping, then re-apply
+  const cleanText = text.replace(/\|(\d{2})/g, '').replace(/\\n/g, '\n');
+  const lines = cleanText.split('\n');
+
+  let firstLine = true;
+  for (const line of lines) {
+    // Word-wrap each line to fit
+    const words = line.split(' ');
+    let current = '';
+
+    for (const word of words) {
+      const testLen = current.length + (current ? 1 : 0) + word.length;
+      const availWidth = firstLine ? bodyWidth : maxWidth - 2;
+
+      if (testLen > availWidth && current) {
+        if (firstLine) {
+          frame.writeContentLine(
+            setColor(senderColor) + prefix + resetColor() + current,
+          );
+          firstLine = false;
+        } else {
+          frame.writeContentLine('  ' + resetColor() + current);
+        }
+        current = word;
+        if (frame.remainingRows <= 1) return;
+      } else {
+        current += (current ? ' ' : '') + word;
+      }
+    }
+
+    // Flush remaining text
+    if (current) {
+      if (firstLine) {
+        frame.writeContentLine(
+          setColor(senderColor) + prefix + resetColor() + current,
+        );
+        firstLine = false;
+      } else {
+        frame.writeContentLine('  ' + resetColor() + current);
+      }
+      if (frame.remainingRows <= 1) return;
+    } else if (firstLine) {
+      frame.writeContentLine(setColor(senderColor) + prefix + resetColor());
+      firstLine = false;
+    }
+  }
 }
 
 export function displaySystemMessage(frame: ScreenFrame, text: string): void {
