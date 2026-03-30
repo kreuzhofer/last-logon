@@ -141,7 +141,7 @@
         }
         {
           tag: "cipher_puzzle"
-          trigger: { type: "interaction_count", min: 5 }
+          trigger: { type: "interaction_count", min: 18 }
           description: "An encoded message appears in the message boards"
           puzzle: "cipher_01"
           required: true
@@ -275,7 +275,7 @@
         }
         {
           tag: "investigator_alliance"
-          trigger: { type: "interaction_count", min: 15 }
+          trigger: { type: "interaction_count", min: 50 }
           description: "The investigator proposes working together"
           npc: "investigator"
           required: false
@@ -318,7 +318,7 @@
         }
         {
           tag: "evidence_assembly"
-          trigger: { type: "interaction_count", min: 20 }
+          trigger: { type: "interaction_count", min: 75 }
           description: "Player must compile evidence from all clues found"
           puzzle: "assemble_evidence"
           required: true
