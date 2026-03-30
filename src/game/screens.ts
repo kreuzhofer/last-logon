@@ -49,10 +49,68 @@ export async function terminalScreen(session: Session, frame: ScreenFrame, game:
     await processBeat(beat, game, session, frame, context);
   }
 
-  const drawChatScreen = async () => {
-    const db = (await import('../core/database.js')).getDb();
+  const headerRows = 2; // title + separator
+  const footerRows = 2; // separator + input
+  const chatRows = 23 - headerRows - footerRows; // rows for messages
+  let scrollOffset = -1; // -1 = auto-scroll to bottom
 
+  // Pre-render messages into wrapped lines with colors
+  const renderMessages = async (): Promise<string[]> => {
+    const db = (await import('../core/database.js')).getDb();
+    const allMessages = await db.gameConversation.findMany({
+      where: { userId: game.userId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const lines: string[] = [];
+    const maxWidth = frame.contentWidth;
+
+    for (const msg of allMessages) {
+      const isUser = msg.role === 'user';
+      const sender = isUser ? session.handle : game.killerAlias;
+      const color = isUser ? Color.LightGreen : Color.LightRed;
+      const prefix = sender + ': ';
+      const prefixLen = prefix.length;
+      const bodyWidth = maxWidth - prefixLen;
+
+      const cleanText = msg.content.replace(/\|(\d{2})/g, '').replace(/\\n/g, '\n');
+      const msgLines = cleanText.split('\n');
+
+      let firstLine = true;
+      for (const ml of msgLines) {
+        const words = ml.split(' ');
+        let current = '';
+        for (const word of words) {
+          const testLen = current.length + (current ? 1 : 0) + word.length;
+          const avail = firstLine ? bodyWidth : maxWidth - 2;
+          if (testLen > avail && current) {
+            if (firstLine) {
+              lines.push(setColor(color) + prefix + resetColor() + current);
+              firstLine = false;
+            } else {
+              lines.push('  ' + current);
+            }
+            current = word;
+          } else {
+            current += (current ? ' ' : '') + word;
+          }
+        }
+        if (current || firstLine) {
+          if (firstLine) {
+            lines.push(setColor(color) + prefix + resetColor() + current);
+            firstLine = false;
+          } else {
+            lines.push('  ' + current);
+          }
+        }
+      }
+    }
+    return lines;
+  };
+
+  const drawChat = async (chatLines: string[]) => {
     frame.refresh([config.general.bbsName, 'Chat'], [
+      { key: '↑↓', label: 'Scroll' },
       { key: 'Q', label: 'Back' },
     ]);
 
@@ -63,20 +121,16 @@ export async function terminalScreen(session: Session, frame: ScreenFrame, game:
     );
     frame.writeContentLine(setColor(Color.DarkGray) + '─'.repeat(frame.contentWidth) + resetColor());
 
-    // Show conversation history — fill available space
-    const availableRows = frame.remainingRows - 3; // reserve for separator + input + padding
-    const recentMessages = await db.gameConversation.findMany({
-      where: { userId: game.userId },
-      orderBy: { createdAt: 'desc' },
-      take: Math.max(3, Math.floor(availableRows / 2)),
-    });
+    // Calculate scroll position
+    const maxScroll = Math.max(0, chatLines.length - chatRows);
+    const offset = scrollOffset < 0 ? maxScroll : Math.min(scrollOffset, maxScroll);
 
-    for (const msg of recentMessages.reverse()) {
-      if (frame.remainingRows <= 4) break;
-      if (msg.role === 'user') {
-        displayChatMessage(frame, session.handle, msg.content, Color.LightGreen);
+    for (let i = 0; i < chatRows; i++) {
+      const idx = offset + i;
+      if (idx < chatLines.length) {
+        frame.writeContentLine(chatLines[idx]!);
       } else {
-        displayChatMessage(frame, game.killerAlias, msg.content, Color.LightRed);
+        frame.writeContentLine('');
       }
     }
 
@@ -84,11 +138,11 @@ export async function terminalScreen(session: Session, frame: ScreenFrame, game:
   };
 
   // Initial draw
-  await drawChatScreen();
+  let chatLines = await renderMessages();
+  await drawChat(chatLines);
 
   // Chat loop
   while (true) {
-    // Input prompt
     terminal.moveTo(frame.currentRow, frame.contentLeft);
     terminal.write(setColor(Color.LightGreen) + session.handle + setColor(Color.DarkGray) + ': ' + setColor(Color.White));
     const input = await terminal.readLine({ maxLength: 200 });
@@ -99,28 +153,42 @@ export async function terminalScreen(session: Session, frame: ScreenFrame, game:
 
     if (input.toLowerCase() === 'p' || input.toLowerCase() === 'puzzle') {
       await puzzleMenu(session, frame, game);
-      await drawChatScreen();
+      chatLines = await renderMessages();
+      scrollOffset = -1;
+      await drawChat(chatLines);
+      continue;
+    }
+
+    // Scroll commands
+    if (input.toLowerCase() === '/up' || input === '/u') {
+      const maxScroll = Math.max(0, chatLines.length - chatRows);
+      if (scrollOffset < 0) scrollOffset = maxScroll;
+      scrollOffset = Math.max(0, scrollOffset - chatRows);
+      await drawChat(chatLines);
+      continue;
+    }
+    if (input.toLowerCase() === '/down' || input === '/d') {
+      scrollOffset = -1; // back to bottom
+      await drawChat(chatLines);
       continue;
     }
 
     // Show typing indicator
-    if (frame.remainingRows > 1) {
-      terminal.moveTo(frame.currentRow, frame.contentLeft);
-      terminal.write(setColor(Color.DarkGray) + game.killerAlias + ' is typing...' + resetColor());
-    }
+    terminal.moveTo(frame.currentRow, frame.contentLeft);
+    terminal.write(setColor(Color.DarkGray) + game.killerAlias + ' is typing...' + resetColor());
 
     const updatedContext = await buildStoryContext(game);
     const response = await getKillerResponse(game.userId, input, updatedContext);
 
-    // Apply effects
     await applyKillerResponseEffects(game, response);
 
-    // Reload game state
     const refreshed = await getPlayerGame(game.userId);
     if (refreshed) game = refreshed;
 
-    // Redraw the full chat with updated conversation
-    await drawChatScreen();
+    // Re-render with new messages, auto-scroll to bottom
+    chatLines = await renderMessages();
+    scrollOffset = -1;
+    await drawChat(chatLines);
   }
 }
 
