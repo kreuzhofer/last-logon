@@ -1175,10 +1175,12 @@ async function postMessage(pgId: number, session: Session, frame: ScreenFrame, r
   const save = await terminal.promptYesNo(c(Color.LightCyan, 'Save this message?'));
 
   if (save) {
-    await messageService.postMessage(pgId, area.id, session.user.id, session.handle, subject, allLines.join('\n'), {
+    const posted = await messageService.postMessage(pgId, area.id, session.user.id, session.handle, subject, allLines.join('\n'), {
       toName,
       replyToId: replyTo?.id,
     });
+    // Mark own message as read (classic BBS behavior — your own posts aren't "new")
+    await messageService.markRead(session.user.id, area.id, posted.id);
     terminal.moveTo(frame.currentRow + 1, frame.contentLeft);
     terminal.write(c(Color.LightGreen, 'Message posted!'));
   } else {
