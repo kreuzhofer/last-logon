@@ -172,8 +172,10 @@ export class Terminal {
         const upper = key.value.toUpperCase();
         if (upperKeys.includes(upper)) return upper;
       }
-      if (key.type === 'special' && upperKeys.includes(key.value)) {
-        return key.value;
+      if (key.type === 'special') {
+        if (upperKeys.includes(key.value)) return key.value;
+        // ESC acts as Q/Back universally
+        if (key.value === 'ESCAPE' && upperKeys.includes('Q')) return 'Q';
       }
     }
   }
