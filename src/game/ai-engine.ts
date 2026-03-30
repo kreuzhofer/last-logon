@@ -1,7 +1,7 @@
 // AI Engine — Vercel AI SDK integration for Last Logon
 // Uses Claude via @ai-sdk/anthropic with tool_use for structured responses
 
-import { generateText, tool } from 'ai';
+import { generateText, tool, jsonSchema } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { createChildLogger } from '../core/logger.js';
@@ -129,7 +129,19 @@ export async function getKillerResponse(
       tools: {
         respond_to_player: tool({
           description: 'Respond to the player as the killer. Always use this tool.',
-          parameters: killerResponseSchema,
+          parameters: jsonSchema({
+            type: 'object' as const,
+            properties: {
+              text: { type: 'string', description: 'The killer\'s response text, may include BBS pipe codes like |11, |08, |15, |12. Max 76 chars per line, 1-4 lines.' },
+              mood: { type: 'string', enum: ['charming', 'playful', 'condescending', 'irritated', 'threatening', 'impressed', 'manic'], description: 'The killer\'s current mood after this response' },
+              beatTriggered: { type: 'string', description: 'Story beat tag if this response triggers one' },
+              clueRevealed: { type: 'string', description: 'Clue tag if a clue is embedded in the response' },
+              unlocks: { type: 'array', items: { type: 'string' }, description: 'BBS features to unlock for the player' },
+              trustDelta: { type: 'number', description: 'Change to killer trust level (-20 to +20)' },
+              suspicionDelta: { type: 'number', description: 'Change to suspicion level (-20 to +20)' },
+            },
+            required: ['text', 'mood'],
+          }),
           execute: async (params) => params,
         }),
       },

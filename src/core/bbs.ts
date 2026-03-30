@@ -166,8 +166,8 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   { key: 'B', label: 'Bulletins', feature: 'bulletins' },
   { key: 'V', label: 'Voting', feature: 'bulletins' },
   { key: 'D', label: 'Games', feature: 'doorGames' },
-  { key: 'T', label: 'Terminal', feature: 'terminal' },
-  { key: 'F', label: 'Files', feature: 'hiddenTerminal' },
+  { key: 'C', label: 'Chat', feature: 'terminal' },
+  { key: 'T', label: 'Terminal', feature: 'hiddenTerminal' },
   { key: 'J', label: 'Journal' },
   { key: 'S', label: 'Stats' },
   { key: 'G', label: 'Goodbye' },
@@ -681,8 +681,8 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
       case 'B': await bulletinsModule(game!.id, session, frame); break;
       case 'V': await votingBoothModule(game!.id, session, frame); break;
       case 'D': if (game) await gamesMenu(session, frame, game); break;
-      case 'T': if (game) await terminalScreen(session, frame, game); break;
-      case 'F':
+      case 'C': if (game) await terminalScreen(session, frame, game); break;
+      case 'T':
         if (game) {
           const ctx = await buildStoryContext(game);
           await runHiddenTerminal(session, frame, game, ctx);
