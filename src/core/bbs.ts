@@ -891,12 +891,15 @@ async function messageAreaModule(session: Session, frame: ScreenFrame, pgId: num
         selectedIndex = Math.min(sorted.length - 1, selectedIndex + listRows);
         continue;
       case 'ENTER':
+        await getDb().playerGame.update({ where: { id: pgId }, data: { totalInteractions: { increment: 1 } } }).catch(() => {});
         await readMessageAt(pgId, session, frame, sorted, selectedIndex, area!);
         continue;
       case 'P':
+        await getDb().playerGame.update({ where: { id: pgId }, data: { totalInteractions: { increment: 1 } } }).catch(() => {});
         await postMessage(pgId, session, frame);
         continue;
       case 'C':
+        await getDb().playerGame.update({ where: { id: pgId }, data: { totalInteractions: { increment: 1 } } }).catch(() => {});
         await changeArea(pgId, session, frame);
         selectedIndex = 0;
         pageStart = 0;
@@ -1010,7 +1013,10 @@ async function readMessageAt(
       if (choice === 'PAGEUP') { scrollOffset = Math.max(0, scrollOffset - bodyAreaRows); continue; }
       if (choice === 'PAGEDOWN') { scrollOffset = Math.min(maxScroll, scrollOffset + bodyAreaRows); continue; }
 
-      // Non-scroll actions break out of the scroll loop
+      // Non-scroll actions count as interactions and break out of the scroll loop
+      if (choice === 'N' || choice === 'P' || choice === 'R') {
+        await getDb().playerGame.update({ where: { id: pgId }, data: { totalInteractions: { increment: 1 } } }).catch(() => {});
+      }
       if (choice === 'N') { if (index < sorted.length - 1) index++; break; }
       if (choice === 'P') { if (index > 0) index--; break; }
       if (choice === 'R') { await postMessage(pgId, session, frame, sorted[index]); break; }
