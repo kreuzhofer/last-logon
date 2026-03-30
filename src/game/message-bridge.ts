@@ -16,7 +16,15 @@ const log = createChildLogger('message-bridge');
 // ─── Message Area Management ─────────────────────────────────────────────────
 
 const GAME_MESSAGE_AREA_TAG = 'lastlogon.private';
+const MAIL_AREA_TAG = 'mail.personal';
 const GAME_ORIGIN = 'game';
+
+async function getMailAreaId(): Promise<number> {
+  const db = getDb();
+  const area = await db.messageArea.findUnique({ where: { tag: MAIL_AREA_TAG } });
+  if (!area) throw new Error('Mail area not found — run seedMessageAreas first');
+  return area.id;
+}
 
 async function getOrCreateGameMessageArea(): Promise<number> {
   const db = getDb();
@@ -64,7 +72,7 @@ export async function sendKillerMessage(
   playerHandle: string,
 ): Promise<void> {
   const db = getDb();
-  const areaId = await getOrCreateGameMessageArea();
+  const areaId = await getMailAreaId();
 
   await db.message.create({
     data: {
@@ -92,7 +100,7 @@ export async function sendNPCMessage(
   playerHandle: string,
 ): Promise<void> {
   const db = getDb();
-  const areaId = await getOrCreateGameMessageArea();
+  const areaId = await getMailAreaId();
 
   await db.message.create({
     data: {
@@ -220,7 +228,7 @@ export async function checkAndSendNPCMessages(
 
         const body = (game.language === 'de' && msg.bodyDe) ? msg.bodyDe : msg.body;
 
-        const areaId = await getOrCreateGameMessageArea();
+        const areaId = await getMailAreaId();
         await db.message.create({
           data: {
             playerGameId: game.id,

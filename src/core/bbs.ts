@@ -693,9 +693,15 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
       case 'G': await handleGoodbye(session, frame); return;
     }
 
-    // After each action, check game progression
+    // After each action, increment interaction count and check game progression
     if (game) {
       try {
+        // Count each menu action as an interaction
+        await getDb().playerGame.update({
+          where: { id: game.id },
+          data: { totalInteractions: { increment: 1 } },
+        });
+
         // Reload game state
         const refreshed = await getPlayerGame(session.user!.id);
         if (refreshed) game = refreshed;
