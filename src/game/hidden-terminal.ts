@@ -5,7 +5,8 @@ import { Color, setColor, resetColor } from '../terminal/ansi.js';
 import { parsePipeCodes, stripPipeCodes } from '../utils/pipe-codes.js';
 import { stripAnsi } from '../utils/string-utils.js';
 import { getFilesystemDef } from './base-script-loader.js';
-import { addClue, hasClue, addStoryLogEntry, addGameEvent } from './game-layer.js';
+import { addClue, hasClue, addStoryLogEntry, addGameEvent, getTriggeredBeats, buildStoryContext } from './game-layer.js';
+import { processBeat } from './screens.js';
 import { createChildLogger } from '../core/logger.js';
 import { getConfig } from '../core/config.js';
 import type { Terminal } from '../terminal/terminal.js';
@@ -418,6 +419,21 @@ export async function runHiddenTerminal(
               ? '|10[HINWEIS ENTDECKT]|08'
               : '|10[CLUE DISCOVERED]|08';
             frame.writeContentLine(parsePipeCodes(clueMsg));
+          }
+
+          // Fire area_visit beats based on file path accessed
+          const filePath = args ? resolvePath(currentPath, args).join('/') : currentPath.join('/');
+          if (filePath.startsWith('system/logs')) {
+            const beats = getTriggeredBeats(game, { type: 'area_visit', value: 'systemLogs' });
+            for (const beat of beats) {
+              await processBeat(beat, game, session, frame, context);
+            }
+          }
+          if (filePath.startsWith('system/private')) {
+            const beats = getTriggeredBeats(game, { type: 'area_visit', value: 'hiddenFiles' });
+            for (const beat of beats) {
+              await processBeat(beat, game, session, frame, context);
+            }
           }
           break;
         }
