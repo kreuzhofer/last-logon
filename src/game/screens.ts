@@ -324,32 +324,52 @@ export async function processBeat(
 // ─── Chapter Transition ──────────────────────────────────────────────────────
 
 export async function showChapterTransition(session: Session, frame: ScreenFrame, game: PlayerGame): Promise<void> {
-  const terminal = session.terminal;
-  const config = getConfig();
   const chapterDef = getChapter(game.chapter as ChapterTag);
 
-  frame.refresh([config.general.bbsName], [{ key: 'Q', label: 'Continue' }]);
-  frame.skipLine();
-  frame.skipLine();
+  // In-character mail from AXIOM about expanded access
+  const chapterMailSubjects: Record<string, string> = {
+    'chapter1': "Your access has been updated",
+    'chapter2': "I've expanded your privileges",
+    'chapter3': "You've earned deeper access",
+    'chapter4': "Full system access granted",
+    'chapter5_caught': "It's over",
+    'chapter5_escaped': "Goodbye",
+  };
 
-  frame.writeContentLine(setColor(Color.DarkGray) + '░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░' + resetColor());
-  frame.skipLine();
+  const chapterMailBodies: Record<string, string> = {
+    'chapter1':
+      "I've noticed you spending time on the board.\n\n" +
+      "I like that. Most people just pass through.\n\n" +
+      "I've opened up a few more areas for you. Bulletins, caller logs.\n" +
+      "Take a look around. There's more here than meets the eye.\n\n" +
+      "— The SysOp",
+    'chapter2':
+      "You've been paying attention. Good.\n\n" +
+      "Most users never look past the surface. You're different.\n\n" +
+      "I've given you access to some... additional tools.\n" +
+      "Terminal access. The file system. Some games.\n\n" +
+      "Use them wisely. Or don't. I'll be watching either way.\n\n" +
+      "— AXIOM",
+    'chapter3':
+      "You're getting closer to something.\n\n" +
+      "I can tell by the way you navigate. The files you read.\n" +
+      "The questions you ask.\n\n" +
+      "Full access. Everything is open to you now.\n" +
+      "But be careful what you dig up. Some things are buried for a reason.\n\n" +
+      "— AXIOM",
+    'chapter4':
+      "No more walls. No more locked doors.\n\n" +
+      "You have everything you need now.\n" +
+      "The question is: what will you do with it?\n\n" +
+      "— AXIOM",
+  };
 
-  const title = (game.language === 'de' && chapterDef?.titleDe)
-    ? chapterDef.titleDe : (chapterDef?.title ?? game.chapter);
-  frame.writeContentLine(setColor(Color.White) + center(title, frame.contentWidth) + resetColor());
+  const subject = chapterMailSubjects[game.chapter] ?? 'System Update';
+  const body = chapterMailBodies[game.chapter] ??
+    `Your access level has been updated.\n\nNew features are now available in the main menu.\n\n— The SysOp`;
 
-  const desc = (game.language === 'de' && chapterDef?.descriptionDe)
-    ? chapterDef.descriptionDe : (chapterDef?.description ?? '');
-  frame.skipLine();
-  frame.writeContentLine(setColor(Color.DarkGray) + center(desc, frame.contentWidth) + resetColor());
-
-  frame.skipLine();
-  frame.writeContentLine(setColor(Color.DarkGray) + '░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░' + resetColor());
-  frame.skipLine();
-
-  terminal.moveTo(frame.currentRow, frame.contentLeft);
-  await terminal.pause();
+  await sendMail(game.id, null, game.killerAlias, session.handle, subject, body);
+  frame.hasNewMail = true;
 
   // Process auto-beats for the new chapter
   await processAutoBeats(game, session, frame);
