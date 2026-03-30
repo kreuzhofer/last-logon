@@ -619,7 +619,9 @@ async function mainMenuLoop(session: Session, frame: ScreenFrame): Promise<void>
       frame.hasNewMail = mailCount > 0;
     }
 
-    frame.refresh([config.general.bbsName, 'Main Menu'], menu.hotkeys);
+    // Show abbreviated hotkeys in bottom bar (full list shown in menu body)
+    const shortHotkeys = menu.hotkeys.filter(h => ['E', 'M', 'J', 'S', 'G'].includes(h.key));
+    frame.refresh([config.general.bbsName, 'Main Menu'], shortHotkeys);
 
     frame.skipLine();
     frame.writeContentLine(c(Color.LightCyan, center('M A I N   M E N U', frame.contentWidth)));
@@ -919,71 +921,93 @@ async function readMessageAt(
     const msg = sorted[index]!;
     if (msg.id > maxReadId) maxReadId = msg.id;
     const w = frame.contentWidth;
-
-    frame.refresh(
-      [config.general.bbsName, 'Messages', area.name],
-      HOTKEYS_READER,
-    );
-
-    // Classic box-drawing message header
-    frame.writeContentLine(c(Color.DarkGray, '┌' + '─'.repeat(w - 2) + '┐'));
-    frame.writeContentLine(
-      c(Color.DarkGray, '│') +
-      c(Color.DarkBlue, ' From : ') + c(Color.LightCyan, padRight(truncate(msg.fromName, 26), 26)) +
-      c(Color.DarkBlue, ' Date: ') + c(Color.LightCyan, padRight(formatDateTime(msg.createdAt), 17)) +
-      c(Color.DarkGray, padRight('', w - 2 - 8 - 26 - 7 - 17) + '│'),
-    );
-    frame.writeContentLine(
-      c(Color.DarkGray, '│') +
-      c(Color.DarkBlue, '   To : ') + c(Color.LightCyan, padRight(truncate(msg.toName, 26), 26)) +
-      c(Color.DarkBlue, ' Msg#: ') + c(Color.LightCyan, padRight(`${index + 1} of ${sorted.length}`, 17)) +
-      c(Color.DarkGray, padRight('', w - 2 - 8 - 26 - 7 - 17) + '│'),
-    );
-    frame.writeContentLine(
-      c(Color.DarkGray, '│') +
-      c(Color.DarkBlue, ' Subj : ') + c(Color.LightCyan, padRight(truncate(msg.subject, w - 12), w - 12)) +
-      c(Color.DarkGray, ' │'),
-    );
-    frame.writeContentLine(c(Color.DarkGray, '├' + '─'.repeat(w - 2) + '┤'));
-
-    // Body
-    const bodyLines = wordWrap(msg.body, w - 3);
-    for (const line of bodyLines) {
-      if (frame.remainingRows <= 2) break;
-      const isQuote = line.startsWith('>');
-      frame.writeContentLine(
-        c(Color.DarkGray, '│') + ' ' +
-        c(isQuote ? Color.DarkCyan : Color.LightGray, padRight(truncate(line, w - 4), w - 4)) +
-        c(Color.DarkGray, '│'),
-      );
-    }
-
-    while (frame.remainingRows > 2) {
-      frame.writeContentLine(
-        c(Color.DarkGray, '│') + ' '.repeat(w - 2) + c(Color.DarkGray, '│'),
-      );
-    }
-    frame.writeContentLine(c(Color.DarkGray, '└' + '─'.repeat(w - 2) + '┘'));
+    const bodyLines = wordWrap(msg.body, w - 4);
+    const headerRows = 5; // top border + 3 header lines + separator
+    const bodyAreaRows = 23 - headerRows - 2; // -2 for bottom border + prompt row
+    let scrollOffset = 0;
+    const maxScroll = Math.max(0, bodyLines.length - bodyAreaRows);
 
     // Mark read
     if (session.user) {
       await messageService.markRead(session.user.id, area.id, maxReadId);
     }
 
-    terminal.moveTo(frame.contentBottom, frame.contentLeft);
-    terminal.write(
-      c(Color.DarkGray, '[') + c(Color.Yellow, 'N') + c(Color.DarkGray, ']ext ') +
-      c(Color.DarkGray, '[') + c(Color.Yellow, 'P') + c(Color.DarkGray, ']rev ') +
-      c(Color.DarkGray, '[') + c(Color.Yellow, 'R') + c(Color.DarkGray, ']eply ') +
-      c(Color.DarkGray, '[') + c(Color.Yellow, 'Q') + c(Color.DarkGray, ']uit '),
-    );
+    // Render loop (redraws on scroll)
+    while (true) {
+      frame.refresh(
+        [config.general.bbsName, 'Messages', area.name],
+        [{ key: '↑↓', label: 'Scroll' }, { key: 'N', label: 'Next' }, { key: 'P', label: 'Prev' }, { key: 'R', label: 'Reply' }, { key: 'Q', label: 'Quit' }],
+      );
 
-    const choice = await terminal.readHotkey(['N', 'P', 'R', 'Q']);
-    switch (choice) {
-      case 'N': if (index < sorted.length - 1) index++; break;
-      case 'P': if (index > 0) index--; break;
-      case 'R': await postMessage(pgId, session, frame, sorted[index]); break;
-      case 'Q': return;
+      // Header
+      frame.writeContentLine(c(Color.DarkGray, '┌' + '─'.repeat(w - 2) + '┐'));
+      frame.writeContentLine(
+        c(Color.DarkGray, '│') +
+        c(Color.DarkBlue, ' From : ') + c(Color.LightCyan, padRight(truncate(msg.fromName, 26), 26)) +
+        c(Color.DarkBlue, ' Date: ') + c(Color.LightCyan, padRight(formatDateTime(msg.createdAt), 17)) +
+        c(Color.DarkGray, padRight('', w - 2 - 8 - 26 - 7 - 17) + '│'),
+      );
+      frame.writeContentLine(
+        c(Color.DarkGray, '│') +
+        c(Color.DarkBlue, '   To : ') + c(Color.LightCyan, padRight(truncate(msg.toName, 26), 26)) +
+        c(Color.DarkBlue, ' Msg#: ') + c(Color.LightCyan, padRight(`${index + 1} of ${sorted.length}`, 17)) +
+        c(Color.DarkGray, padRight('', w - 2 - 8 - 26 - 7 - 17) + '│'),
+      );
+      frame.writeContentLine(
+        c(Color.DarkGray, '│') +
+        c(Color.DarkBlue, ' Subj : ') + c(Color.LightCyan, padRight(truncate(msg.subject, w - 12), w - 12)) +
+        c(Color.DarkGray, ' │'),
+      );
+      frame.writeContentLine(c(Color.DarkGray, '├' + '─'.repeat(w - 2) + '┤'));
+
+      // Body with scroll offset
+      for (let i = 0; i < bodyAreaRows; i++) {
+        const lineIdx = scrollOffset + i;
+        if (lineIdx < bodyLines.length) {
+          const line = bodyLines[lineIdx]!;
+          const isQuote = line.startsWith('>');
+          frame.writeContentLine(
+            c(Color.DarkGray, '│') + ' ' +
+            c(isQuote ? Color.DarkCyan : Color.LightGray, padRight(truncate(line, w - 4), w - 4)) +
+            c(Color.DarkGray, '│'),
+          );
+        } else {
+          frame.writeContentLine(
+            c(Color.DarkGray, '│') + ' '.repeat(w - 2) + c(Color.DarkGray, '│'),
+          );
+        }
+      }
+
+      // Scroll indicator
+      const scrollInfo = maxScroll > 0 ? ` [${scrollOffset + 1}-${Math.min(scrollOffset + bodyAreaRows, bodyLines.length)}/${bodyLines.length}]` : '';
+      frame.writeContentLine(
+        c(Color.DarkGray, '└' + '─'.repeat(w - 2 - scrollInfo.length)) +
+        c(Color.DarkGray, scrollInfo) +
+        c(Color.DarkGray, '┘'),
+      );
+
+      // Prompt
+      terminal.moveTo(frame.contentBottom, frame.contentLeft);
+      terminal.write(
+        c(Color.DarkGray, '[') + c(Color.Yellow, 'N') + c(Color.DarkGray, ']ext ') +
+        c(Color.DarkGray, '[') + c(Color.Yellow, 'P') + c(Color.DarkGray, ']rev ') +
+        c(Color.DarkGray, '[') + c(Color.Yellow, 'R') + c(Color.DarkGray, ']eply ') +
+        c(Color.DarkGray, '[') + c(Color.Yellow, 'Q') + c(Color.DarkGray, ']uit') +
+        (maxScroll > 0 ? c(Color.DarkGray, ' ↑↓') : ''),
+      );
+
+      const choice = await terminal.readHotkey(['N', 'P', 'R', 'Q', 'UP', 'DOWN', 'PAGEUP', 'PAGEDOWN']);
+
+      if (choice === 'UP' && scrollOffset > 0) { scrollOffset--; continue; }
+      if (choice === 'DOWN' && scrollOffset < maxScroll) { scrollOffset++; continue; }
+      if (choice === 'PAGEUP') { scrollOffset = Math.max(0, scrollOffset - bodyAreaRows); continue; }
+      if (choice === 'PAGEDOWN') { scrollOffset = Math.min(maxScroll, scrollOffset + bodyAreaRows); continue; }
+
+      // Non-scroll actions break out of the scroll loop
+      if (choice === 'N') { if (index < sorted.length - 1) index++; break; }
+      if (choice === 'P') { if (index > 0) index--; break; }
+      if (choice === 'R') { await postMessage(pgId, session, frame, sorted[index]); break; }
+      if (choice === 'Q') return;
     }
   }
 }
@@ -1384,40 +1408,59 @@ async function bulletinsModule(pgId: number, session: Session, frame: ScreenFram
     if (result.action === 'Q') return;
 
     if (result.action === 'ENTER' && selectedIndex < bulletins.length) {
-      // Read the selected bulletin
+      // Read the selected bulletin with scroll support
       const bulletin = bulletins[selectedIndex]!;
       const w = frame.contentWidth;
-
-      frame.refresh([config.general.bbsName, 'Bulletins', `#${bulletin.number}`], HOTKEYS_PAUSE);
-
-      frame.writeContentLine(c(Color.DarkGray, '┌' + '─'.repeat(w - 2) + '┐'));
-      frame.writeContentLine(
-        c(Color.DarkGray, '│') +
-        c(Color.Yellow, ` Bulletin #${bulletin.number}: `) +
-        c(Color.White, padRight(truncate(bulletin.title, w - 17), w - 17)) +
-        c(Color.DarkGray, '│'),
-      );
-      frame.writeContentLine(c(Color.DarkGray, '├' + '─'.repeat(w - 2) + '┤'));
-
-      // Render body with pipe codes
       const bodyText = bulletin.body ?? '';
       const bodyLines = bodyText.split('\n');
-      for (const line of bodyLines) {
-        if (frame.remainingRows <= 2) break;
+      const headerRows = 3; // top border + title + separator
+      const bodyAreaRows = 23 - headerRows - 2; // -2 for bottom border + prompt
+      let scrollOffset = 0;
+      const maxScroll = Math.max(0, bodyLines.length - bodyAreaRows);
+
+      while (true) {
+        frame.refresh([config.general.bbsName, 'Bulletins', `#${bulletin.number}`], [
+          ...(maxScroll > 0 ? [{ key: '↑↓', label: 'Scroll' }] : []),
+          { key: 'Q', label: 'Back' },
+        ]);
+
+        frame.writeContentLine(c(Color.DarkGray, '┌' + '─'.repeat(w - 2) + '┐'));
         frame.writeContentLine(
-          c(Color.DarkGray, '│') + ' ' +
-          parsePipeCodes(padRight(truncate(line.trimEnd(), w - 4), w - 4)) +
+          c(Color.DarkGray, '│') +
+          c(Color.Yellow, ` Bulletin #${bulletin.number}: `) +
+          c(Color.White, padRight(truncate(bulletin.title, w - 17), w - 17)) +
           c(Color.DarkGray, '│'),
         );
-      }
+        frame.writeContentLine(c(Color.DarkGray, '├' + '─'.repeat(w - 2) + '┤'));
 
-      while (frame.remainingRows > 2) {
-        frame.writeContentLine(c(Color.DarkGray, '│') + ' '.repeat(w - 2) + c(Color.DarkGray, '│'));
-      }
-      frame.writeContentLine(c(Color.DarkGray, '└' + '─'.repeat(w - 2) + '┘'));
+        for (let i = 0; i < bodyAreaRows; i++) {
+          const lineIdx = scrollOffset + i;
+          if (lineIdx < bodyLines.length) {
+            frame.writeContentLine(
+              c(Color.DarkGray, '│') + ' ' +
+              parsePipeCodes(padRight(truncate(bodyLines[lineIdx]!.trimEnd(), w - 4), w - 4)) +
+              resetColor() + c(Color.DarkGray, '│'),
+            );
+          } else {
+            frame.writeContentLine(c(Color.DarkGray, '│') + ' '.repeat(w - 2) + c(Color.DarkGray, '│'));
+          }
+        }
 
-      terminal.moveTo(frame.contentBottom, frame.contentLeft);
-      await terminal.pause();
+        const scrollInfo = maxScroll > 0 ? ` [${scrollOffset + 1}-${Math.min(scrollOffset + bodyAreaRows, bodyLines.length)}/${bodyLines.length}]` : '';
+        frame.writeContentLine(
+          c(Color.DarkGray, '└' + '─'.repeat(w - 2 - scrollInfo.length)) +
+          c(Color.DarkGray, scrollInfo) +
+          c(Color.DarkGray, '┘'),
+        );
+
+        terminal.moveTo(frame.contentBottom, frame.contentLeft);
+        const key = await terminal.readHotkey(['Q', 'UP', 'DOWN', 'PAGEUP', 'PAGEDOWN']);
+        if (key === 'UP' && scrollOffset > 0) { scrollOffset--; continue; }
+        if (key === 'DOWN' && scrollOffset < maxScroll) { scrollOffset++; continue; }
+        if (key === 'PAGEUP') { scrollOffset = Math.max(0, scrollOffset - bodyAreaRows); continue; }
+        if (key === 'PAGEDOWN') { scrollOffset = Math.min(maxScroll, scrollOffset + bodyAreaRows); continue; }
+        if (key === 'Q') break;
+      }
     }
   }
 }
