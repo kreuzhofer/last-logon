@@ -272,14 +272,27 @@ export async function runHiddenTerminal(
 
     // Command loop within this screen
     let running = true;
-    while (running && frame.remainingRows > 2) {
+    while (running) {
+      // Refresh screen if running low on space
+      if (frame.remainingRows <= 3) {
+        frame.refresh([config.general.bbsName, 'SYSTEM ACCESS'], HOTKEYS_TERMINAL);
+        frame.skipLine();
+        frame.writeContentLine(
+          setColor(Color.DarkGray) + 'Hidden Terminal v1.0 — ' +
+          setColor(Color.LightRed) + 'UNAUTHORIZED ACCESS' + resetColor(),
+        );
+        frame.skipLine();
+      }
+
+      // Use current path for prompt (updates after cd)
+      const promptPath = getPathString(currentPath);
       terminal.moveTo(frame.currentRow, frame.contentLeft);
       terminal.write(
         setColor(Color.LightGreen) + 'root' +
         setColor(Color.DarkGray) + '@' +
         setColor(Color.LightCyan) + 'underground' +
         setColor(Color.DarkGray) + ':' +
-        setColor(Color.LightCyan) + pathStr +
+        setColor(Color.LightCyan) + promptPath +
         setColor(Color.White) + '$ ' + resetColor(),
       );
 
