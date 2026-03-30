@@ -90,7 +90,7 @@
       progression: {
         advanceTo: "chapter1"
         requires: ["first_login"]
-        minLogins: 3
+        minLogins: 2
       }
     }
 

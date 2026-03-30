@@ -309,8 +309,12 @@ export async function checkChapterProgression(game: PlayerGame): Promise<boolean
 
   if (!allRequired) return false;
 
-  // Check minimum logins if specified
-  if (chapter.progression.minLogins && game.totalSessions < chapter.progression.minLogins) return false;
+  // Check minimum engagement — logins OR sufficient in-session activity
+  // This allows progression without logging off: completed beats count as engagement
+  if (chapter.progression.minLogins) {
+    const engagement = Math.max(game.totalSessions, completedBeats.length);
+    if (engagement < chapter.progression.minLogins) return false;
+  }
 
   // Determine which chapter to advance to (supports branching endings)
   let nextChapter = chapter.progression.advanceTo;
