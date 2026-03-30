@@ -43,7 +43,7 @@ export class ScreenFrame {
   private _hasNewMail = false;
   private mailAnimFrame = 0;
   private mailAnimTimer: ReturnType<typeof setInterval> | null = null;
-  private static readonly MAIL_ANIM = ['*', '+', '*', '.', '*', '+', '*', '-'];
+  private static readonly MAIL_ANIM = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
   constructor(private terminal: Terminal) {
     // Fixed 80x25 layout — classic BBS ANSI art requires exact dimensions
@@ -127,7 +127,7 @@ export class ScreenFrame {
 
     // Draw mail indicator with animated character
     if (this._hasNewMail) {
-      const animChar = ScreenFrame.MAIL_ANIM[this.mailAnimFrame] ?? '*';
+      const animChar = ScreenFrame.MAIL_ANIM[this.mailAnimFrame] ?? '⠋';
       t.write(ansi.setColor(Color.Yellow) + ' ' + animChar + ansi.setColor(Color.White) + ' MAIL ');
       t.setColor(BORDER_COLOR);
     }
@@ -305,7 +305,7 @@ export class ScreenFrame {
     this.mailAnimTimer = setInterval(() => {
       this.mailAnimFrame = (this.mailAnimFrame + 1) % ScreenFrame.MAIL_ANIM.length;
       this.drawMailIndicator();
-    }, 300);
+    }, 120);
   }
 
   private stopMailAnimation(): void {
@@ -321,7 +321,7 @@ export class ScreenFrame {
     const t = this.terminal;
     const w = this.screenW;
     // " * MAIL " — the animated char is at col w-7 (8 chars from right edge: space+char+space+MAIL+space+╗)
-    const animChar = ScreenFrame.MAIL_ANIM[this.mailAnimFrame] ?? '*';
+    const animChar = ScreenFrame.MAIL_ANIM[this.mailAnimFrame] ?? '⠋';
 
     // Save cursor, draw only the animated character, restore cursor
     t.saveCursor();
