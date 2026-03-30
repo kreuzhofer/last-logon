@@ -2,7 +2,8 @@
 // Provides ls, cd, cat, grep, pwd, whoami commands within a fake filesystem
 
 import { Color, setColor, resetColor } from '../terminal/ansi.js';
-import { parsePipeCodes } from '../utils/pipe-codes.js';
+import { parsePipeCodes, stripPipeCodes } from '../utils/pipe-codes.js';
+import { stripAnsi } from '../utils/string-utils.js';
 import { getFilesystemDef } from './base-script-loader.js';
 import { addClue, hasClue, addStoryLogEntry, addGameEvent } from './game-layer.js';
 import { createChildLogger } from '../core/logger.js';
@@ -14,6 +15,37 @@ import type { FSNode, StoryContext } from './game-types.js';
 import type { PlayerGame } from '@prisma/client';
 
 const log = createChildLogger('hidden-terminal');
+
+/** Write a line to the frame, wrapping if it exceeds content width */
+function writeWrapped(frame: ScreenFrame, text: string): void {
+  const maxWidth = frame.contentWidth;
+  // Strip ANSI/pipe codes to measure visible length
+  const visible = stripAnsi(stripPipeCodes(text));
+
+  if (visible.length <= maxWidth) {
+    frame.writeContentLine(text);
+    return;
+  }
+
+  // Need to wrap — split into chunks by visible width
+  // This is approximate since ANSI codes make exact splitting hard
+  // For simplicity, wrap the visible text and re-apply the color prefix
+  const words = visible.split(' ');
+  let currentLine = '';
+
+  for (const word of words) {
+    const testLen = currentLine.length + (currentLine ? 1 : 0) + word.length;
+    if (testLen > maxWidth && currentLine) {
+      frame.writeContentLine(setColor(Color.LightGray) + currentLine + resetColor());
+      currentLine = '  ' + word; // indent continuation
+    } else {
+      currentLine += (currentLine ? ' ' : '') + word;
+    }
+  }
+  if (currentLine) {
+    frame.writeContentLine(setColor(Color.LightGray) + currentLine + resetColor());
+  }
+}
 
 const HOTKEYS_TERMINAL: HotkeyDef[] = [
   { key: 'Q', label: 'Exit' },
@@ -344,7 +376,7 @@ export async function runHiddenTerminal(
               frame.refresh([config.general.bbsName, 'SYSTEM ACCESS'], HOTKEYS_TERMINAL);
               frame.skipLine();
             }
-            frame.writeContentLine(line);
+            writeWrapped(frame, line);
           }
           break;
         }
@@ -370,14 +402,13 @@ export async function runHiddenTerminal(
           const result = cmdCat(root, currentPath, args, game.language, cluesFound);
           for (const line of result.lines) {
             if (frame.remainingRows <= 2) {
-              // Pause and refresh when screen fills
               terminal.moveTo(frame.currentRow, frame.contentLeft);
               terminal.write(setColor(Color.DarkGray) + '--- more ---' + resetColor());
               await terminal.readKey();
               frame.refresh([config.general.bbsName, 'SYSTEM ACCESS'], HOTKEYS_TERMINAL);
               frame.skipLine();
             }
-            frame.writeContentLine(parsePipeCodes(line));
+            writeWrapped(frame, parsePipeCodes(line));
           }
           if (result.revealsClue && !cluesFound.includes(result.revealsClue)) {
             cluesFound.push(result.revealsClue);
@@ -394,8 +425,14 @@ export async function runHiddenTerminal(
         case 'grep': {
           const lines = cmdGrep(root, currentPath, args, cluesFound);
           for (const line of lines) {
-            if (frame.remainingRows <= 1) break;
-            frame.writeContentLine(parsePipeCodes(line));
+            if (frame.remainingRows <= 2) {
+              terminal.moveTo(frame.currentRow, frame.contentLeft);
+              terminal.write(setColor(Color.DarkGray) + '--- more ---' + resetColor());
+              await terminal.readKey();
+              frame.refresh([config.general.bbsName, 'SYSTEM ACCESS'], HOTKEYS_TERMINAL);
+              frame.skipLine();
+            }
+            writeWrapped(frame, parsePipeCodes(line));
           }
           break;
         }
