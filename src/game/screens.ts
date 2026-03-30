@@ -49,32 +49,30 @@ export async function terminalScreen(session: Session, frame: ScreenFrame, game:
     await processBeat(beat, game, session, frame, context);
   }
 
-  // Chat loop
-  while (true) {
-    frame.refresh([config.general.bbsName, 'Terminal'], [
-      { key: 'P', label: 'Puzzle' },
+  const drawChatScreen = async () => {
+    const db = (await import('../core/database.js')).getDb();
+
+    frame.refresh([config.general.bbsName, 'Chat'], [
       { key: 'Q', label: 'Back' },
     ]);
-    frame.skipLine();
 
-    const label = game.language === 'de' ? 'TERMINAL — Direktverbindung' : 'TERMINAL — Direct Connection';
-    frame.writeContentLine(setColor(Color.DarkGray) + label + resetColor());
     frame.writeContentLine(
       setColor(Color.DarkGray) + (game.language === 'de'
-        ? 'Schreibe eine Nachricht oder "quit" zum Verlassen.'
-        : 'Type a message or "quit" to leave.') + resetColor(),
+        ? 'Chat mit ' + setColor(Color.LightRed) + game.killerAlias + setColor(Color.DarkGray) + ' — "quit" zum Verlassen'
+        : 'Chat with ' + setColor(Color.LightRed) + game.killerAlias + setColor(Color.DarkGray) + ' — type "quit" to leave') + resetColor(),
     );
-    frame.skipLine();
+    frame.writeContentLine(setColor(Color.DarkGray) + '─'.repeat(frame.contentWidth) + resetColor());
 
-    // Show recent conversation
-    const db = (await import('../core/database.js')).getDb();
+    // Show conversation history — fill available space
+    const availableRows = frame.remainingRows - 3; // reserve for separator + input + padding
     const recentMessages = await db.gameConversation.findMany({
       where: { userId: game.userId },
       orderBy: { createdAt: 'desc' },
-      take: 5,
+      take: Math.max(3, Math.floor(availableRows / 2)),
     });
 
     for (const msg of recentMessages.reverse()) {
+      if (frame.remainingRows <= 4) break;
       if (msg.role === 'user') {
         displayChatMessage(frame, session.handle, msg.content, Color.LightGreen);
       } else {
@@ -82,9 +80,15 @@ export async function terminalScreen(session: Session, frame: ScreenFrame, game:
       }
     }
 
-    frame.skipLine();
+    frame.writeContentLine(setColor(Color.DarkGray) + '─'.repeat(frame.contentWidth) + resetColor());
+  };
 
-    // Input
+  // Initial draw
+  await drawChatScreen();
+
+  // Chat loop
+  while (true) {
+    // Input prompt
     terminal.moveTo(frame.currentRow, frame.contentLeft);
     terminal.write(setColor(Color.LightGreen) + session.handle + setColor(Color.DarkGray) + ': ' + setColor(Color.White));
     const input = await terminal.readLine({ maxLength: 200 });
@@ -93,21 +97,20 @@ export async function terminalScreen(session: Session, frame: ScreenFrame, game:
       return;
     }
 
-    // Check for puzzle command
     if (input.toLowerCase() === 'p' || input.toLowerCase() === 'puzzle') {
       await puzzleMenu(session, frame, game);
+      await drawChatScreen();
       continue;
     }
 
-    // Show typing indicator and get AI response
-    frame.skipLine();
-    await showTypingIndicator(terminal, frame, game.killerAlias, 1500);
+    // Show typing indicator
+    if (frame.remainingRows > 1) {
+      terminal.moveTo(frame.currentRow, frame.contentLeft);
+      terminal.write(setColor(Color.DarkGray) + game.killerAlias + ' is typing...' + resetColor());
+    }
 
     const updatedContext = await buildStoryContext(game);
     const response = await getKillerResponse(game.userId, input, updatedContext);
-
-    // Display response
-    displayChatMessage(frame, game.killerAlias, response.text, Color.LightRed);
 
     // Apply effects
     await applyKillerResponseEffects(game, response);
@@ -116,9 +119,8 @@ export async function terminalScreen(session: Session, frame: ScreenFrame, game:
     const refreshed = await getPlayerGame(game.userId);
     if (refreshed) game = refreshed;
 
-    frame.skipLine();
-    terminal.moveTo(frame.currentRow, frame.contentLeft);
-    await terminal.pause();
+    // Redraw the full chat with updated conversation
+    await drawChatScreen();
   }
 }
 
