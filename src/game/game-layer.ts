@@ -48,6 +48,11 @@ export async function getPlayerGame(userId: number): Promise<PlayerGame | null> 
 
 export async function createPlayerGame(userId: number, language: string, timezone = 'UTC'): Promise<PlayerGame> {
   const db = getDb();
+
+  // Get prologue chapter's defined features for initial unlock
+  const prologueDef = getChapter('prologue');
+  const initialFeatures = prologueDef?.features ?? ['messages', 'oneliners'];
+
   return db.playerGame.create({
     data: {
       userId,
@@ -57,7 +62,7 @@ export async function createPlayerGame(userId: number, language: string, timezon
       phase: 'prologue',
       killerAlias: 'AXIOM',
       killerProfile: '{}',
-      unlockedFeatures: JSON.stringify(['messages', 'oneliners']),
+      unlockedFeatures: JSON.stringify(initialFeatures),
       completedBeats: '[]',
       activeClues: '[]',
       solvedPuzzles: '[]',

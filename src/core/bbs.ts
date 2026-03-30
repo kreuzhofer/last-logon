@@ -574,6 +574,7 @@ async function handleNewUser(session: Session, frame: ScreenFrame): Promise<bool
     });
     await addGameEvent(game, 'game_start', `New game started, language: ${language}`, { language }, 10);
     await addStoryLogEntry(game, 'login', 'Game initialized');
+    await gameOnLogin(user.id); // Count first login for session tracking
     await injectGhostOneLiners(game);
 
     // Show prologue
