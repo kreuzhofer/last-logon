@@ -158,11 +158,11 @@ function cmdLs(
   }
 
   if (showLong) {
-    lines.push(setColor(Color.DarkGray) + 'total ' + node.children.filter(c => showAll || isNodeVisible(c, cluesFound)).length + resetColor());
+    lines.push(setColor(Color.DarkGray) + 'total ' + node.children.filter(c => isNodeVisible(c, cluesFound)).length + resetColor());
   }
 
   for (const child of node.children) {
-    if (!showAll && !isNodeVisible(child, cluesFound)) continue;
+    if (!isNodeVisible(child, cluesFound)) continue;
 
     const isDir = child.type === 'directory';
     const nameColor = isDir ? Color.LightCyan : Color.LightGray;
