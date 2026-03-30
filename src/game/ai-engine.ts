@@ -1,7 +1,7 @@
 // AI Engine — Vercel AI SDK integration for Last Logon
 // Uses Claude via @ai-sdk/anthropic with tool_use for structured responses
 
-import { generateText, tool, jsonSchema } from 'ai';
+import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { createChildLogger } from '../core/logger.js';
@@ -122,56 +122,56 @@ export async function getKillerResponse(
   ];
 
   try {
+    // Use plain text generation with JSON output instruction
+    const jsonPrompt = systemPrompt + `\n\n## Response Format
+You MUST respond with a JSON object (and nothing else) containing:
+- "text": Your response text (1-4 lines, max 76 chars per line, may use BBS pipe codes)
+- "mood": Your current mood (one of: charming, playful, condescending, irritated, threatening, impressed, manic)
+- "trustDelta": Optional number (-20 to +20) for trust change
+- "suspicionDelta": Optional number (-20 to +20) for suspicion change
+
+Example: {"text": "|15Well well well... you're still here.|08\\nI respect persistence.", "mood": "impressed", "trustDelta": 5}`;
+
     const result = await generateText({
       model: getModel(),
-      system: systemPrompt,
+      system: jsonPrompt,
       messages,
-      tools: {
-        respond_to_player: tool({
-          description: 'Respond to the player as the killer. Always use this tool.',
-          parameters: jsonSchema({
-            type: 'object' as const,
-            properties: {
-              text: { type: 'string', description: 'The killer\'s response text, may include BBS pipe codes like |11, |08, |15, |12. Max 76 chars per line, 1-4 lines.' },
-              mood: { type: 'string', enum: ['charming', 'playful', 'condescending', 'irritated', 'threatening', 'impressed', 'manic'], description: 'The killer\'s current mood after this response' },
-              beatTriggered: { type: 'string', description: 'Story beat tag if this response triggers one' },
-              clueRevealed: { type: 'string', description: 'Clue tag if a clue is embedded in the response' },
-              unlocks: { type: 'array', items: { type: 'string' }, description: 'BBS features to unlock for the player' },
-              trustDelta: { type: 'number', description: 'Change to killer trust level (-20 to +20)' },
-              suspicionDelta: { type: 'number', description: 'Change to suspicion level (-20 to +20)' },
-            },
-            required: ['text', 'mood'],
-          }),
-          execute: async (params) => params,
-        }),
-      },
-      toolChoice: { type: 'tool', toolName: 'respond_to_player' },
       maxTokens: MAX_TOKENS_PER_RESPONSE,
     });
 
-    // Extract tool call result
-    const toolCall = result.toolCalls?.[0];
-    if (toolCall && toolCall.toolName === 'respond_to_player') {
-      const response = toolCall.args as KillerResponse;
-
-      // Save killer's response
-      await saveConversation(userId, 'assistant', response.text, {
-        mood: response.mood,
-        beatTriggered: response.beatTriggered,
-        clueRevealed: response.clueRevealed,
-      });
-
-      log.info({ userId, mood: response.mood }, 'Killer response generated');
-      return response;
+    // Parse JSON from response
+    const responseText = result.text.trim();
+    let parsed: Record<string, unknown> = {};
+    try {
+      // Find JSON in the response (might have markdown wrapping)
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[0]);
+      }
+    } catch {
+      // If JSON parse fails, use the raw text as the response
+      parsed = { text: responseText, mood: 'charming' };
     }
 
-    // Fallback if tool wasn't called (shouldn't happen with toolChoice)
-    const fallbackText = result.text || '|08...';
-    await saveConversation(userId, 'assistant', fallbackText);
-    return {
-      text: fallbackText,
-      mood: context.killerMood,
+    const response: KillerResponse = {
+      text: String(parsed.text ?? responseText).substring(0, 300),
+      mood: (parsed.mood as KillerMood) ?? 'charming',
+      beatTriggered: parsed.beatTriggered as string | undefined,
+      clueRevealed: parsed.clueRevealed as string | undefined,
+      unlocks: parsed.unlocks as string[] | undefined,
+      trustDelta: parsed.trustDelta as number | undefined,
+      suspicionDelta: parsed.suspicionDelta as number | undefined,
     };
+
+    // Save killer's response
+    await saveConversation(userId, 'assistant', response.text, {
+      mood: response.mood,
+      beatTriggered: response.beatTriggered,
+      clueRevealed: response.clueRevealed,
+    });
+
+    log.info({ userId, mood: response.mood }, 'Killer response generated');
+    return response;
   } catch (err) {
     log.error({ error: err, userId }, 'AI call failed');
     // Return in-character fallback
