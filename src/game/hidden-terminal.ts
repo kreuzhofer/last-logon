@@ -337,7 +337,13 @@ export async function runHiddenTerminal(
         case 'ls': {
           const lines = cmdLs(root, currentPath, args, cluesFound);
           for (const line of lines) {
-            if (frame.remainingRows <= 1) break;
+            if (frame.remainingRows <= 2) {
+              terminal.moveTo(frame.currentRow, frame.contentLeft);
+              terminal.write(setColor(Color.DarkGray) + '--- more ---' + resetColor());
+              await terminal.readKey();
+              frame.refresh([config.general.bbsName, 'SYSTEM ACCESS'], HOTKEYS_TERMINAL);
+              frame.skipLine();
+            }
             frame.writeContentLine(line);
           }
           break;
@@ -363,7 +369,14 @@ export async function runHiddenTerminal(
         case 'cat': {
           const result = cmdCat(root, currentPath, args, game.language, cluesFound);
           for (const line of result.lines) {
-            if (frame.remainingRows <= 1) break;
+            if (frame.remainingRows <= 2) {
+              // Pause and refresh when screen fills
+              terminal.moveTo(frame.currentRow, frame.contentLeft);
+              terminal.write(setColor(Color.DarkGray) + '--- more ---' + resetColor());
+              await terminal.readKey();
+              frame.refresh([config.general.bbsName, 'SYSTEM ACCESS'], HOTKEYS_TERMINAL);
+              frame.skipLine();
+            }
             frame.writeContentLine(parsePipeCodes(line));
           }
           if (result.revealsClue && !cluesFound.includes(result.revealsClue)) {
