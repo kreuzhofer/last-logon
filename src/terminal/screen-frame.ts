@@ -43,7 +43,7 @@ export class ScreenFrame {
   private _hasNewMail = false;
   private mailAnimFrame = 0;
   private mailAnimTimer: ReturnType<typeof setInterval> | null = null;
-  private static readonly MAIL_ANIM = ['✦', '✧', '✦', '⊹', '✦', '✧', '✦', '·'];
+  private static readonly MAIL_ANIM = ['*', '+', '*', '.', '*', '+', '*', '-'];
 
   constructor(private terminal: Terminal) {
     // Fixed 80x25 layout — classic BBS ANSI art requires exact dimensions
@@ -115,8 +115,8 @@ export class ScreenFrame {
     t.write(' ');
     t.setColor(BORDER_COLOR);
 
-    // Mail indicator on the right side: " ✦ MAIL "
-    const mailTagLen = this._hasNewMail ? 9 : 0; // " ✦ MAIL "
+    // Mail indicator on the right side: " * MAIL " = 8 visible chars
+    const mailTagLen = this._hasNewMail ? 8 : 0;
 
     // Fill remaining with horizontal border
     const used = 3 + crumbVisible.length + 1; // ╔═ + space + crumb + space
@@ -127,10 +127,8 @@ export class ScreenFrame {
 
     // Draw mail indicator with animated character
     if (this._hasNewMail) {
-      const animChar = ScreenFrame.MAIL_ANIM[this.mailAnimFrame] ?? '✦';
-      t.write(' ');
-      t.write(ansi.setColor(Color.Yellow) + animChar);
-      t.write(ansi.setColor(Color.White) + ' MAIL ');
+      const animChar = ScreenFrame.MAIL_ANIM[this.mailAnimFrame] ?? '*';
+      t.write(ansi.setColor(Color.Yellow) + ' ' + animChar + ansi.setColor(Color.White) + ' MAIL ');
       t.setColor(BORDER_COLOR);
     }
 
@@ -322,13 +320,12 @@ export class ScreenFrame {
     if (!this._hasNewMail) return;
     const t = this.terminal;
     const w = this.screenW;
-    // Mail indicator is positioned near the right end of the top border
-    // Format: " ✦ MAIL " — the animated char is at position w - 9
-    const animChar = ScreenFrame.MAIL_ANIM[this.mailAnimFrame] ?? '✦';
+    // " * MAIL " — the animated char is at col w-7 (8 chars from right edge: space+char+space+MAIL+space+╗)
+    const animChar = ScreenFrame.MAIL_ANIM[this.mailAnimFrame] ?? '*';
 
-    // Save cursor, draw indicator, restore cursor
+    // Save cursor, draw only the animated character, restore cursor
     t.saveCursor();
-    t.moveTo(1, w - 9);
+    t.moveTo(1, w - 7);
     t.write(ansi.setColor(Color.Yellow) + animChar + ansi.resetColor());
     t.restoreCursor();
   }
