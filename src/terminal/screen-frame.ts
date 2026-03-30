@@ -41,6 +41,9 @@ export class ScreenFrame {
   private hotkeys: HotkeyDef[] = [];
   private cursorRow: number;
   private _hasNewMail = false;
+  private mailAnimFrame = 0;
+  private mailAnimTimer: ReturnType<typeof setInterval> | null = null;
+  private static readonly MAIL_ANIM = ['✦', '✧', '✦', '⊹', '✦', '✧', '✦', '·'];
 
   constructor(private terminal: Terminal) {
     // Fixed 80x25 layout — classic BBS ANSI art requires exact dimensions
@@ -112,9 +115,8 @@ export class ScreenFrame {
     t.write(' ');
     t.setColor(BORDER_COLOR);
 
-    // Mail indicator on the right side
-    const mailTag = this._hasNewMail ? ' [MAIL] ' : '';
-    const mailTagLen = mailTag.length;
+    // Mail indicator on the right side: " ✦ MAIL "
+    const mailTagLen = this._hasNewMail ? 9 : 0; // " ✦ MAIL "
 
     // Fill remaining with horizontal border
     const used = 3 + crumbVisible.length + 1; // ╔═ + space + crumb + space
@@ -123,9 +125,12 @@ export class ScreenFrame {
       t.write(D.horizontal.repeat(remaining));
     }
 
-    // Draw mail indicator with blinking yellow
+    // Draw mail indicator with animated character
     if (this._hasNewMail) {
-      t.write(ansi.blink() + ansi.setColor(Color.Yellow) + mailTag + ansi.setColor(BORDER_COLOR) + ansi.sgr(0));
+      const animChar = ScreenFrame.MAIL_ANIM[this.mailAnimFrame] ?? '✦';
+      t.write(' ');
+      t.write(ansi.setColor(Color.Yellow) + animChar);
+      t.write(ansi.setColor(Color.White) + ' MAIL ');
       t.setColor(BORDER_COLOR);
     }
 
@@ -279,16 +284,58 @@ export class ScreenFrame {
     this.drawFrame();
   }
 
-  /** Set the new mail indicator (shown as blinking [MAIL] in the top border) */
+  /** Set the new mail indicator (animated in the top border) */
   set hasNewMail(value: boolean) {
     if (this._hasNewMail !== value) {
       this._hasNewMail = value;
+      if (value) {
+        this.startMailAnimation();
+      } else {
+        this.stopMailAnimation();
+      }
       this.drawTopBorder();
     }
   }
 
   get hasNewMail(): boolean {
     return this._hasNewMail;
+  }
+
+  private startMailAnimation(): void {
+    if (this.mailAnimTimer) return;
+    this.mailAnimFrame = 0;
+    this.mailAnimTimer = setInterval(() => {
+      this.mailAnimFrame = (this.mailAnimFrame + 1) % ScreenFrame.MAIL_ANIM.length;
+      this.drawMailIndicator();
+    }, 300);
+  }
+
+  private stopMailAnimation(): void {
+    if (this.mailAnimTimer) {
+      clearInterval(this.mailAnimTimer);
+      this.mailAnimTimer = null;
+    }
+  }
+
+  /** Redraw just the animated mail indicator character without redrawing the whole border */
+  private drawMailIndicator(): void {
+    if (!this._hasNewMail) return;
+    const t = this.terminal;
+    const w = this.screenW;
+    // Mail indicator is positioned near the right end of the top border
+    // Format: " ✦ MAIL " — the animated char is at position w - 9
+    const animChar = ScreenFrame.MAIL_ANIM[this.mailAnimFrame] ?? '✦';
+
+    // Save cursor, draw indicator, restore cursor
+    t.saveCursor();
+    t.moveTo(1, w - 9);
+    t.write(ansi.setColor(Color.Yellow) + animChar + ansi.resetColor());
+    t.restoreCursor();
+  }
+
+  /** Clean up timer on session end */
+  destroy(): void {
+    this.stopMailAnimation();
   }
 }
 
