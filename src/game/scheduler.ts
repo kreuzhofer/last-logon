@@ -6,6 +6,7 @@ import { createChildLogger } from '../core/logger.js';
 import { buildStoryContext, createNotification, getStoryThreads } from './game-layer.js';
 import { generateAsyncMessage } from './ai-engine.js';
 import { sendKillerMessage, generateAndPostNPCResponse } from './message-bridge.js';
+import { postMessage } from '../messages/message-service.js';
 import type { PlayerGame } from '@prisma/client';
 
 const log = createChildLogger('game-scheduler');
@@ -24,7 +25,10 @@ export function startGameScheduler(): void {
 
   intervalHandle = setInterval(async () => {
     try {
-      // Run NPC response checks on every tick (every 10 min)
+      // Check for mail to AXIOM that needs a reply
+      await checkForAxiomMailReplies();
+
+      // Run NPC response checks on every tick
       await checkForNPCResponses();
 
       // Run inactivity checks less frequently (every hour)
@@ -205,6 +209,89 @@ async function processGameForNPCResponse(
 
   if (success) {
     log.info({ gameId: game.id, messageId: targetMessage.id, playerHour }, 'NPC response posted');
+  }
+}
+
+// ─── AXIOM Mail Reply System ─────────────────────────────────────────────────
+
+/**
+ * Check for player mail addressed to AXIOM that hasn't been answered.
+ * Generates an AI response and sends it as a mail reply.
+ */
+async function checkForAxiomMailReplies(): Promise<void> {
+  const db = getDb();
+
+  // Find active games
+  const activeGames = await db.playerGame.findMany({
+    where: {
+      chapter: { notIn: ['complete'] },
+    },
+    include: { user: true },
+  });
+
+  for (const game of activeGames) {
+    try {
+      // Find mail area
+      const mailArea = await db.messageArea.findUnique({ where: { tag: 'mail.personal' } });
+      if (!mailArea) continue;
+
+      // Find player's mail to AXIOM that hasn't been replied to
+      const playerMailToAxiom = await db.message.findMany({
+        where: {
+          playerGameId: game.id,
+          areaId: mailArea.id,
+          fromUserId: game.userId,
+          toName: game.killerAlias,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      });
+
+      if (playerMailToAxiom.length === 0) continue;
+
+      const lastMail = playerMailToAxiom[0]!;
+
+      // Check if AXIOM already replied to this message
+      const axiomReply = await db.message.findFirst({
+        where: {
+          playerGameId: game.id,
+          areaId: mailArea.id,
+          fromName: game.killerAlias,
+          createdAt: { gt: lastMail.createdAt },
+        },
+      });
+
+      if (axiomReply) continue; // Already replied
+
+      // Generate AI response via the killer chat engine
+      const { getKillerResponse } = await import('./ai-engine.js');
+      const { buildStoryContext } = await import('./game-layer.js');
+      const context = await buildStoryContext(game);
+
+      const response = await getKillerResponse(game.userId, lastMail.body, context);
+
+      // Send AXIOM's reply as mail
+      await postMessage(
+        game.id,
+        mailArea.id,
+        null,
+        game.killerAlias,
+        lastMail.subject.startsWith('Re: ') ? lastMail.subject : `Re: ${lastMail.subject}`,
+        response.text.replace(/\|(\d{2})/g, ''), // Strip pipe codes for mail
+        { toName: (game as any).user.handle, replyToId: lastMail.id },
+      );
+
+      // Apply AI response effects
+      const { applyKillerResponseEffects } = await import('./game-layer.js');
+      await applyKillerResponseEffects(game, response);
+
+      // Notify player
+      await createNotification(game.userId, 'message', `Reply from ${game.killerAlias}`);
+
+      log.info({ gameId: game.id, subject: lastMail.subject }, 'AXIOM mail reply sent');
+    } catch (err) {
+      log.error({ error: err, gameId: game.id }, 'Failed to generate AXIOM mail reply');
+    }
   }
 }
 

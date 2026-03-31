@@ -437,9 +437,17 @@ export async function generateNPCPost(
     return { text, subject };
   } catch (err) {
     log.error({ error: err, userId, npcHandle }, 'NPC board post generation failed');
-    // Return a fallback in-character response
+    // Return a contextual fallback — short but meaningful
+    const fallbacks: Record<string, string[]> = {
+      'NIGHTOWL': ['Interesting thread. Been thinking about this a lot lately.', 'Couldn\'t sleep, so I\'m reading through these posts. Good stuff.', 'Been meaning to chime in on this. Glad someone brought it up.'],
+      'BYTE_RUNNER': ['Oh man, this is right up my alley! Great topic.', 'Just saw this — reminds me of something I was working on last week.', 'Count me in on this discussion!'],
+      'DARK_MATTER': ['Some things are worth paying attention to.', 'I\'ve seen this pattern before. Years ago, on another board.', 'Hmm. Interesting timing for this discussion.'],
+      'NEON_PULSE': ['Coole Diskussion! Sorry, cool discussion :)', 'This is relevant to something I\'ve been researching.', 'Following this thread with interest.'],
+      'CIRCUIT_JANE': ['Filed under: things that make you think.', 'Well, that\'s one way to look at it.', 'Not what I expected to read today, but here we are.'],
+    };
+    const pool = fallbacks[npcHandle] ?? ['Interesting post.'];
     return {
-      text: `— ${npcHandle}`,
+      text: pool[Math.floor(Math.random() * pool.length)]! + `\n\n— ${npcHandle}`,
       subject: threadSubject.startsWith('Re: ') ? threadSubject : `Re: ${threadSubject}`,
     };
   }
