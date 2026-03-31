@@ -24,10 +24,10 @@ interface SeqElement {
 }
 
 const ELEMENTS: SeqElement[] = [
-  { symbol: '\u2588', color: Color.LightRed,     key: 'R' },  // Red block
-  { symbol: '\u2588', color: Color.LightGreen,   key: 'G' },  // Green block
-  { symbol: '\u2588', color: Color.LightBlue,    key: 'B' },  // Blue block
-  { symbol: '\u2588', color: Color.Yellow,        key: 'Y' },  // Yellow block
+  { symbol: '\u2588', color: Color.LightRed,     key: 'W' },  // Red block — W (up)
+  { symbol: '\u2588', color: Color.LightGreen,   key: 'A' },  // Green block — A (left)
+  { symbol: '\u2588', color: Color.LightBlue,    key: 'S' },  // Blue block — S (down)
+  { symbol: '\u2588', color: Color.Yellow,        key: 'D' },  // Yellow block — D (right)
 ];
 
 // ─── Glitch messages per chapter ────────────────────────────────────────────
@@ -109,10 +109,10 @@ export async function memorySequence(
 
   // Setup screen
   frame.refresh(['Games', 'Memory Sequence'], [
-    { key: 'R', label: 'Red' },
-    { key: 'G', label: 'Green' },
-    { key: 'B', label: 'Blue' },
-    { key: 'Y', label: 'Yellow' },
+    { key: 'W', label: 'Red' },
+    { key: 'A', label: 'Green' },
+    { key: 'S', label: 'Blue' },
+    { key: 'D', label: 'Yellow' },
     { key: 'ESC', label: 'Exit' },
   ]);
   frame.clearContent();
@@ -210,7 +210,7 @@ export async function memorySequence(
       terminal.write(progress + resetColor());
 
       // Wait for input
-      const key = await terminal.readHotkey(['R', 'G', 'B', 'Y', 'ESCAPE']);
+      const key = await terminal.readHotkey(['W', 'A', 'S', 'D', 'ESCAPE']);
 
       if (key === 'ESCAPE') {
         gameOver = true;
