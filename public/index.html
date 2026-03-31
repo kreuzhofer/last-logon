@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Neon Underground — BBS</title>
+  <link rel="preload" href="/fonts/Px437_IBM_VGA_8x16.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
   <style>
     @font-face {
@@ -235,10 +236,16 @@
       });
     }
 
-    function startTerminal() {
+    async function startTerminal() {
       sessionStorage.setItem('bbs-connected', 'true');
       document.getElementById('welcome').style.display = 'none';
       document.getElementById('terminal-screen').style.display = 'flex';
+
+      // Wait for IBM VGA font to load before creating terminal
+      try {
+        await document.fonts.load('16px "IBM VGA"');
+        await document.fonts.ready;
+      } catch(e) { /* font may not be available, continue with fallback */ }
 
       if (!term) {
         term = new Terminal({
