@@ -418,8 +418,10 @@ export function getTriggeredBeats(
   game: PlayerGame,
   action?: { type: string; value?: string },
 ): StoryBeat[] {
+  const completed = getCompletedBeats(game);
   const beats = getChapterBeats(game.chapter as ChapterTag);
-  return beats.filter(beat => checkBeatTrigger(beat, game, action));
+  // Only return beats that haven't been completed yet
+  return beats.filter(beat => !completed.includes(beat.tag) && checkBeatTrigger(beat, game, action));
 }
 
 // ─── Session Lifecycle ───────────────────────────────────────────────────────
