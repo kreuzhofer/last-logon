@@ -23,6 +23,9 @@ let lastInactivityCheck = 0;
 export function startGameScheduler(): void {
   if (intervalHandle) return;
 
+  let lastFollowUpCheck = 0;
+  const FOLLOW_UP_INTERVAL_MS = 30 * 60 * 1000; // Check for NPC follow-ups every 30 min
+
   intervalHandle = setInterval(async () => {
     try {
       // Check for mail to AXIOM that needs a reply
@@ -31,8 +34,14 @@ export function startGameScheduler(): void {
       // Run NPC response checks on every tick
       await checkForNPCResponses();
 
-      // Run inactivity checks less frequently (every hour)
+      // NPC follow-ups on existing threads (every 30 min)
       const now = Date.now();
+      if (now - lastFollowUpCheck >= FOLLOW_UP_INTERVAL_MS) {
+        await checkForNPCFollowUps();
+        lastFollowUpCheck = now;
+      }
+
+      // Run inactivity checks less frequently (every hour)
       if (now - lastInactivityCheck >= INACTIVITY_CHECK_INTERVAL_MS) {
         await checkInactivePlayers();
         lastInactivityCheck = now;
@@ -209,6 +218,115 @@ async function processGameForNPCResponse(
 
   if (success) {
     log.info({ gameId: game.id, messageId: targetMessage.id, playerHour }, 'NPC response posted');
+  }
+}
+
+// ─── NPC Follow-Up System ────────────────────────────────────────────────────
+
+const MAX_NPC_FOLLOWUPS_PER_DAY = 2;
+const NPC_FOLLOWUP_COOLDOWN_MS = 8 * 60 * 60 * 1000; // 8 hours between follow-ups per game
+
+/**
+ * Make NPCs continue existing discussion threads organically.
+ * Picks a random active thread and has a relevant NPC add to the conversation.
+ * Max 1-2 follow-ups per day per game to feel natural, not spammy.
+ */
+async function checkForNPCFollowUps(): Promise<void> {
+  const db = getDb();
+
+  const activeGames = await db.playerGame.findMany({
+    where: {
+      phase: { not: 'prologue' },
+      chapter: { notIn: ['chapter5_caught', 'chapter5_escaped', 'complete'] },
+    },
+    include: { user: true },
+  });
+
+  for (const game of activeGames) {
+    try {
+      // Check daily follow-up limit using flags
+      const flags = JSON.parse(game.flags || '{}');
+      const followUpLog = (flags.npcFollowUps as Array<{ at: string }>) ?? [];
+      const today = new Date().toISOString().split('T')[0]!;
+      const todayCount = followUpLog.filter(f => f.at.startsWith(today)).length;
+
+      if (todayCount >= MAX_NPC_FOLLOWUPS_PER_DAY) continue;
+
+      // Check cooldown
+      const lastFollowUp = followUpLog[followUpLog.length - 1];
+      if (lastFollowUp && Date.now() - new Date(lastFollowUp.at).getTime() < NPC_FOLLOWUP_COOLDOWN_MS) {
+        continue;
+      }
+
+      // Find threads with recent activity (last 48 hours) in public boards
+      const recentThreshold = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      const recentMessages = await db.message.findMany({
+        where: {
+          playerGameId: game.id,
+          createdAt: { gte: recentThreshold },
+          area: { tag: { notIn: ['mail.personal', 'lastlogon.private'] } },
+        },
+        include: { area: { select: { tag: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+
+      if (recentMessages.length === 0) continue;
+
+      // Group by thread (root subject)
+      const threads = new Map<string, typeof recentMessages>();
+      for (const msg of recentMessages) {
+        const rootSubject = msg.subject.replace(/^Re: /, '');
+        const key = `${msg.area.tag}:${rootSubject}`;
+        if (!threads.has(key)) threads.set(key, []);
+        threads.get(key)!.push(msg);
+      }
+
+      // Pick a random thread that has at least 2 messages (an active conversation)
+      const activeThreads = [...threads.entries()].filter(([, msgs]) => msgs.length >= 2);
+      if (activeThreads.length === 0) continue;
+
+      const [threadKey, threadMsgs] = activeThreads[Math.floor(Math.random() * activeThreads.length)]!;
+      const [areaTag, rootSubject] = threadKey.split(':') as [string, string];
+      const lastMsg = threadMsgs[0]!;
+
+      // Don't follow up on NPC-only threads (need at least one player message)
+      const hasPlayerMsg = threadMsgs.some(m => m.fromUserId === game.userId);
+      if (!hasPlayerMsg) continue;
+
+      // Pick an NPC different from the last poster
+      const playerHour = getPlayerLocalHour(game.timezone);
+      const { generateAndPostNPCResponse: genResponse } = await import('./message-bridge.js');
+
+      const success = await genResponse(
+        game as any,
+        {
+          areaTag,
+          areaId: lastMsg.areaId,
+          subject: rootSubject,
+          body: lastMsg.body,
+          replyToId: lastMsg.replyToId,
+          messageId: lastMsg.id,
+        },
+        playerHour,
+      );
+
+      if (success) {
+        // Log the follow-up
+        followUpLog.push({ at: new Date().toISOString() });
+        // Keep only last 10 entries
+        while (followUpLog.length > 10) followUpLog.shift();
+        flags.npcFollowUps = followUpLog;
+        await db.playerGame.update({
+          where: { id: game.id },
+          data: { flags: JSON.stringify(flags) },
+        });
+
+        log.info({ gameId: game.id, areaTag, subject: rootSubject }, 'NPC follow-up posted');
+      }
+    } catch (err) {
+      log.error({ error: err, gameId: game.id }, 'Failed NPC follow-up check');
+    }
   }
 }
 
