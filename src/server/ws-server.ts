@@ -124,6 +124,20 @@ export function startWebSocketServer(onConnection: ConnectionHandler): Promise<v
 
   // Create HTTP server to serve static client + upgrade to WebSocket
   const httpServer = createServer((req, res) => {
+    const url = req.url ?? '/';
+
+    // Serve static files from public/ (fonts, etc.)
+    if (url.startsWith('/fonts/') || url.endsWith('.woff2') || url.endsWith('.woff') || url.endsWith('.ttf')) {
+      const filePath = resolve(publicDir, url.slice(1));
+      if (existsSync(filePath)) {
+        const ext = filePath.split('.').pop();
+        const contentType = ext === 'woff2' ? 'font/woff2' : ext === 'woff' ? 'font/woff' : ext === 'ttf' ? 'font/ttf' : 'application/octet-stream';
+        res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=86400' });
+        res.end(readFileSync(filePath));
+        return;
+      }
+    }
+
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(indexHtml);
   });
