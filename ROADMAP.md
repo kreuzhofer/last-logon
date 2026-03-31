@@ -213,11 +213,38 @@ Key pillars:
   - Chapter 4: GHOST_ADMIN appears briefly (posts then vanishes — is it AXIOM?)
   - NPCs seeded when chapter advances, start posting via scheduler
 
-- [ ] **ANSI art integration** — Wire art files into screens
+- [x] **NPC follow-up system** — Done. NPCs continue existing threads (max 2/day, 8h cooldown)
+- [x] **AXIOM mail replies** — Done. Scheduler detects mail to AXIOM, generates AI reply
+- [x] **Natural puzzle discovery** — Done. Puzzles solved through chat, terminal decode, board posts — no menu
+- [x] **NPC fallback fix** — Done. Contextual fallback responses per NPC personality
+
+- [ ] **ANSI art on key screens** — Wire existing art into welcome, login, goodbye, chapter transitions
   - Art files exist in `art/` (welcome.ans, login.ans, chapter1.ans, etc.)
   - Art viewer module exists (`src/terminal/art-viewer.ts`)
-  - Need to call `displayArt()` in welcome screen, login, chapter transitions
-  - Need hand-crafted quality art — current files are basic
+  - Call `displayArt()` in drawWelcomeContent, handleLogin, handleGoodbye, showChapterTransition
+
+- [ ] **NPC art posts** — NPCs share ASCII art in board messages
+  - CIRCUIT_JANE shares demoscene art in retro.software
+  - BYTE_RUNNER posts hardware diagrams in retro.hardware
+  - Art embedded in message body using pipe codes
+  - Scheduler occasionally generates art posts (from predefined pool)
+
+- [ ] **ANSI art gallery** — New menu item, unlocked in Chapter 2
+  - Browsable collection of ANSI art pieces
+  - Classic BBS scene inspired (ACiD, iCE, Blade style)
+  - Scrollable viewer for tall pieces
+  - AXIOM "curates" the gallery — new pieces appear as story progresses
+
+- [ ] **AXIOM's hidden art** — Unlocked with higher trust (Chapter 3+)
+  - Hidden files in /home/axiom/ containing personal art
+  - Art contains encoded messages visible only in the visual pattern
+  - Trust-gated: AXIOM mentions his art collection when trust > 30
+
+- [ ] **Web links in puzzles** — Real URLs in game content (Chapter 4+)
+  - Web client renders clickable links (open in new tab)
+  - SSH users see URLs to copy/paste
+  - Links lead to real pages with planted narrative clues
+  - Wikipedia, archived BBS sites, encoded messages on external pages
 
 - [ ] **Dynamic users.db** — Terminal `/system/users.db` should show the player's own handle
   - Generate file content at runtime including current user
