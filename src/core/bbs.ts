@@ -37,6 +37,7 @@ import { connectionEffect, displayScriptedText, sleep } from '../game/narrative.
 import { runHiddenTerminal } from '../game/hidden-terminal.js';
 import { gamesMenu } from '../games/index.js';
 import { getChapter } from '../game/base-script-loader.js';
+import { displayArt, hasArt } from '../terminal/art-viewer.js';
 import type { PlayerGame } from '@prisma/client';
 import type { ChapterTag } from '../game/game-types.js';
 
@@ -285,38 +286,16 @@ export async function handleSession(conn: SSHConnection): Promise<void> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function drawWelcomeContent(frame: ScreenFrame, bbsName: string, tagline: string): void {
-  const w = frame.contentWidth;
-  const BLK = BoxChars.block;
-
-  frame.skipLine();
-  frame.skipLine();
-
-  // BBS Name centered
-  frame.writeContentLine(c(Color.LightCyan, center(bbsName, w)));
-
-  // Tagline
-  frame.writeContentLine(c(Color.DarkGray, center(`< ${tagline} >`, w)));
-
-  frame.skipLine();
-
-  // Decorative gradient line
-  const gradient =
-    c(Color.DarkBlue, BLK.light.repeat(8)) +
-    c(Color.DarkCyan, BLK.medium.repeat(8)) +
-    c(Color.LightCyan, BLK.dark.repeat(8)) +
-    c(Color.White, BLK.full.repeat(8)) +
-    c(Color.LightCyan, BLK.dark.repeat(8)) +
-    c(Color.DarkCyan, BLK.medium.repeat(8)) +
-    c(Color.DarkBlue, BLK.light.repeat(8));
-  const gradientWidth = 56;
-  const gradientPad = Math.floor((w - gradientWidth) / 2);
-  frame.writeContentLine(' '.repeat(gradientPad) + gradient);
-
-  frame.skipLine();
-
-  // Welcome text
-  frame.writeContentLine(c(Color.White, '  Welcome, traveler. You have reached a place'));
-  frame.writeContentLine(c(Color.White, '  where the digital frontier never faded.'));
+  // Show ANSI art if available
+  if (hasArt('welcome.ans')) {
+    displayArt(frame, 'welcome.ans');
+  } else {
+    // Fallback: text-based welcome
+    frame.skipLine();
+    frame.writeContentLine(c(Color.LightCyan, center(bbsName, frame.contentWidth)));
+    frame.writeContentLine(c(Color.DarkGray, center(`< ${tagline} >`, frame.contentWidth)));
+    frame.skipLine();
+  }
   frame.skipLine();
 
   // Info line
@@ -339,8 +318,12 @@ async function handleLogin(session: Session, frame: ScreenFrame): Promise<boolea
 
   frame.refresh([config.general.bbsName, 'Login'], HOTKEYS_PAUSE);
 
-  frame.skipLine();
-  frame.writeContentLine(c(Color.LightCyan, center('L O G I N', frame.contentWidth)));
+  if (hasArt('login.ans')) {
+    displayArt(frame, 'login.ans');
+  } else {
+    frame.skipLine();
+    frame.writeContentLine(c(Color.LightCyan, center('L O G I N', frame.contentWidth)));
+  }
   frame.skipLine();
 
   // Handle input
@@ -450,8 +433,12 @@ async function handleNewUser(session: Session, frame: ScreenFrame): Promise<bool
 
   frame.refresh([config.general.bbsName, 'New User'], HOTKEYS_PAUSE);
 
-  frame.skipLine();
-  frame.writeContentLine(c(Color.LightCyan, center('N E W   U S E R', frame.contentWidth)));
+  if (hasArt('newuser.ans')) {
+    displayArt(frame, 'newuser.ans');
+  } else {
+    frame.skipLine();
+    frame.writeContentLine(c(Color.LightCyan, center('N E W   U S E R', frame.contentWidth)));
+  }
   frame.skipLine();
   frame.writeContentLine(c(Color.LightGray, 'Welcome! Please fill out the following to create your account.'));
   frame.skipLine();
@@ -1905,9 +1892,14 @@ async function handleGoodbye(session: Session, frame: ScreenFrame): Promise<void
 
   frame.refresh([config.general.bbsName, 'Goodbye'], []);
 
-  frame.skipLine();
-  frame.skipLine();
-  frame.writeContentLine(c(Color.LightCyan, center('G O O D B Y E !', frame.contentWidth)));
+  if (hasArt('goodbye.ans')) {
+    frame.skipLine();
+    displayArt(frame, 'goodbye.ans');
+  } else {
+    frame.skipLine();
+    frame.skipLine();
+    frame.writeContentLine(c(Color.LightCyan, center('G O O D B Y E !', frame.contentWidth)));
+  }
   frame.skipLine();
   frame.writeContentLine(c(Color.LightGray, center(`Thank you for visiting ${config.general.bbsName}!`, frame.contentWidth)));
   frame.writeContentLine(c(Color.LightGray, center('Come back soon, traveler.', frame.contentWidth)));

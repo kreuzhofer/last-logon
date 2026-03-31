@@ -4,6 +4,7 @@
 import { Color, setColor, resetColor } from '../terminal/ansi.js';
 import { center, formatDateTime } from '../utils/string-utils.js';
 import { getConfig } from '../core/config.js';
+import { displayArt, hasArt } from '../terminal/art-viewer.js';
 import { createChildLogger } from '../core/logger.js';
 import {
   getPlayerGame,
@@ -114,6 +115,9 @@ export async function terminalScreen(session: Session, frame: ScreenFrame, game:
       { key: 'Q', label: 'Back' },
     ]);
 
+    if (hasArt('terminal.ans')) {
+      displayArt(frame, 'terminal.ans');
+    }
     frame.writeContentLine(
       setColor(Color.DarkGray) + (game.language === 'de'
         ? 'Chat mit ' + setColor(Color.LightRed) + game.killerAlias + setColor(Color.DarkGray) + ' — "quit" zum Verlassen'
