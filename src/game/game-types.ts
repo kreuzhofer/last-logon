@@ -58,6 +58,7 @@ export interface KillerResponse {
   unlocks?: string[];        // BBS features to unlock
   trustDelta?: number;       // Change to killer trust (-100 to +100)
   suspicionDelta?: number;   // Change to killer suspicion (0-100)
+  puzzleSolved?: string;     // Puzzle tag if AI recognizes answer in conversation
 }
 
 export interface NPCResponse {

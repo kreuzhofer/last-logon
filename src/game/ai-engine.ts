@@ -6,7 +6,8 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { createChildLogger } from '../core/logger.js';
 import { getDb } from '../core/database.js';
-import { getAIPrompt, interpolateTemplate, getKillerPersonality } from './base-script-loader.js';
+import { getAIPrompt, interpolateTemplate, getKillerPersonality, getPuzzleDefs } from './base-script-loader.js';
+import { isPuzzleSolved } from './game-layer.js';
 import type {
   KillerResponse,
   KillerMood,
@@ -100,6 +101,36 @@ async function saveConversation(userId: number, role: 'user' | 'assistant', cont
   });
 }
 
+// ─── Pending Puzzles for AI Recognition ──────────────────────────────────────
+
+function buildPendingPuzzlesPrompt(context: StoryContext, userId: number): string {
+  const allPuzzles = getPuzzleDefs();
+  const chapterOrder = ['prologue', 'chapter1', 'chapter2', 'chapter3', 'chapter4'];
+  const currentIdx = chapterOrder.indexOf(context.chapter);
+
+  const pending = allPuzzles.filter(p => {
+    if (context.puzzlesSolved.includes(p.tag)) return false;
+    const pIdx = chapterOrder.indexOf(p.chapter);
+    return pIdx <= currentIdx;
+  });
+
+  if (pending.length === 0) return '';
+
+  let section = '\n\n## Player Discoveries (Puzzle Recognition)\n';
+  section += 'If the player mentions something that shows they decoded or discovered one of these,\n';
+  section += 'include "puzzleSolved": "<tag>" in your JSON response. React in character.\n\n';
+
+  for (const p of pending) {
+    const tokens = p.fuzzyTokens?.join(', ') ?? '';
+    const answers = p.answers?.slice(0, 3).join(', ') ?? '';
+    section += `- ${p.tag}: Key tokens: [${tokens}]`;
+    if (answers) section += ` Answers: [${answers}]`;
+    section += '\n';
+  }
+
+  return section;
+}
+
 // ─── Core AI Functions ───────────────────────────────────────────────────────
 
 export async function getKillerResponse(
@@ -121,14 +152,18 @@ export async function getKillerResponse(
     { role: 'user' as const, content: playerInput },
   ];
 
+  // Build pending puzzles section for AI to recognize answers
+  const pendingPuzzlesSection = buildPendingPuzzlesPrompt(context, userId);
+
   try {
     // Use plain text generation with JSON output instruction
-    const jsonPrompt = systemPrompt + `\n\n## Response Format
+    const jsonPrompt = systemPrompt + pendingPuzzlesSection + `\n\n## Response Format
 You MUST respond with a JSON object (and nothing else) containing:
 - "text": Your response text (1-4 lines, max 76 chars per line, may use BBS pipe codes)
 - "mood": Your current mood (one of: charming, playful, condescending, irritated, threatening, impressed, manic)
 - "trustDelta": Optional number (-20 to +20) for trust change
 - "suspicionDelta": Optional number (-20 to +20) for suspicion change
+- "puzzleSolved": Optional string — puzzle tag if the player's message shows they decoded/discovered a puzzle answer
 
 Example: {"text": "|15Well well well... you're still here.|08\\nI respect persistence.", "mood": "impressed", "trustDelta": 5}`;
 
@@ -161,6 +196,7 @@ Example: {"text": "|15Well well well... you're still here.|08\\nI respect persis
       unlocks: parsed.unlocks as string[] | undefined,
       trustDelta: parsed.trustDelta as number | undefined,
       suspicionDelta: parsed.suspicionDelta as number | undefined,
+      puzzleSolved: parsed.puzzleSolved as string | undefined,
     };
 
     // Save killer's response

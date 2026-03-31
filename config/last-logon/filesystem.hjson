@@ -57,6 +57,12 @@
                   |07[2026-03-28 03:00:01] |12SYSTEM  Removed 3 inactive accounts|07
                   |07[2026-03-28 03:00:01] |12SYSTEM  WARNING: Account ECHO_7 — cannot delete, data locked|07
                   |07[2026-03-28 04:00:00] |04ADMIN   AXIOM accessed /system/private/ from console|07
+                  |08
+                  |08[2026-03-28 05:12:00] |04DATA  7-15-20  1-3-3-5-19-19  6-18-15-13  14-15-4-5  55|07
+                  |08[2026-03-28 05:12:01] |04DATA  19-5-18-22-5-18  12-15-3-1-20-9-15-14  3-15-14-6-9-18-13-5-4|07
+                  |08[2026-03-28 05:12:02] |04DATA  2-1-3-11-21-16  1-20  13-9-4-14-9-7-8-20|07
+                  |08
+                  |08[Note: DATA entries above use A=1,B=2,...Z=26 encoding]
                 '''
               }
               {
@@ -197,6 +203,37 @@
             content: '''
               |07Temporary files are purged every 24 hours.
               |08Nothing to see here. Move along.
+            '''
+          }
+          {
+            name: ".hidden_note"
+            type: "file"
+            hidden: true
+            content: '''
+              |08Found this scratched into the terminal bezel:
+              |08
+              |11"I have cities but no houses,
+              |11 forests but no trees,
+              |11 and water but no fish.
+              |11 What am I?"
+              |08
+              |08— scrawled by someone. The handwriting gets shaky.
+            '''
+          }
+          {
+            name: ".encoded_msg"
+            type: "file"
+            hidden: true
+            content: '''
+              |07From: [DELETED]
+              |07Date: [REDACTED]
+              |07
+              |12GUVF VF ABG JUNG VG FRRZF
+              |12UR XABJF JUNG LBH QVQ YNFG FHZZRE
+              |12GUR FLFBC VF JNGPUVAT
+              |07
+              |08[This appears to be encoded. Each letter is
+              |08 shifted by a fixed amount. Classic cipher.]
             '''
           }
         ]

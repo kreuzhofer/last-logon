@@ -467,7 +467,7 @@ export async function adjustSuspicion(game: PlayerGame, delta: number): Promise<
 
 export async function applyKillerResponseEffects(
   game: PlayerGame,
-  response: { mood?: KillerMood; trustDelta?: number; suspicionDelta?: number; clueRevealed?: string; unlocks?: string[]; beatTriggered?: string },
+  response: { mood?: KillerMood; trustDelta?: number; suspicionDelta?: number; clueRevealed?: string; unlocks?: string[]; beatTriggered?: string; puzzleSolved?: string },
 ): Promise<void> {
   if (response.mood) {
     await updateKillerMood(game, response.mood);
@@ -486,6 +486,12 @@ export async function applyKillerResponseEffects(
   }
   if (response.beatTriggered) {
     await completeBeat(game, response.beatTriggered);
+  }
+
+  // Handle puzzle solved via AI recognition
+  if (response.puzzleSolved) {
+    const { applyPuzzleSolvedEffects } = await import('./puzzles/puzzle-recognizer.js');
+    await applyPuzzleSolvedEffects(game, response.puzzleSolved, 'chat');
   }
 
   // Increment interactions

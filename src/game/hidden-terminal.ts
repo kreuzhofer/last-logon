@@ -96,7 +96,7 @@ function getPathString(path: string[]): string {
 
 // ─── Tab Completion ─────────────────────────────────────────────────────────
 
-const COMMANDS = ['ls', 'cd', 'cat', 'grep', 'pwd', 'whoami', 'help', 'exit', 'quit', 'clear'];
+const COMMANDS = ['ls', 'cd', 'cat', 'grep', 'decode', 'pwd', 'whoami', 'help', 'exit', 'quit', 'clear'];
 
 function getCompletions(root: FSNode, currentPath: string[], cluesFound: string[], buffer: string): string[] {
   const parts = buffer.split(/\s+/);
@@ -355,6 +355,7 @@ export async function runHiddenTerminal(
             '|11  cd <path>       |07— Change directory',
             '|11  cat <file>      |07— Display file contents',
             '|11  grep <pat> <f>  |07— Search in file',
+            '|11  decode <text>   |07— Analyze decoded text',
             '|11  pwd             |07— Print working directory',
             '|11  whoami          |07— Show current user',
             '|11  clear           |07— Clear screen',
@@ -461,6 +462,24 @@ export async function runHiddenTerminal(
           frame.writeContentLine(setColor(Color.LightRed) + 'root' + resetColor() +
             setColor(Color.DarkGray) + ' (how did you get root access?)' + resetColor());
           break;
+
+        case 'decode': {
+          if (!args) {
+            frame.writeContentLine(setColor(Color.DarkGray) + 'Usage: decode <text>' + resetColor());
+            break;
+          }
+          frame.writeContentLine(setColor(Color.DarkGray) + 'Analyzing: ' + setColor(Color.White) + args + resetColor());
+          const { checkTextAgainstPendingPuzzles: checkPuzzle, applyPuzzleSolvedEffects: applyEffects } = await import('./puzzles/puzzle-recognizer.js');
+          const match = checkPuzzle(game, args, 'terminal');
+          if (match) {
+            await applyEffects(game, match.puzzleTag, 'terminal');
+            frame.writeContentLine(setColor(Color.LightGreen) + '[PATTERN MATCH — DATA CORRELATES WITH SYSTEM ANOMALY]' + resetColor());
+            frame.writeContentLine(setColor(Color.LightGreen) + '[DISCOVERY LOGGED]' + resetColor());
+          } else {
+            frame.writeContentLine(setColor(Color.DarkGray) + 'No recognizable pattern found.' + resetColor());
+          }
+          break;
+        }
 
         case 'clear':
           // Re-render frame, effectively clearing

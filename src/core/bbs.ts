@@ -1193,6 +1193,17 @@ async function postMessage(pgId: number, session: Session, frame: ScreenFrame, r
     });
     // Mark own message as read (classic BBS behavior — your own posts aren't "new")
     await messageService.markRead(session.user.id, area.id, posted.id);
+
+    // Check if the posted message contains a puzzle answer
+    const game = await getPlayerGame(session.user.id);
+    if (game) {
+      const { checkTextAgainstPendingPuzzles, applyPuzzleSolvedEffects } = await import('../game/puzzles/puzzle-recognizer.js');
+      const puzzleMatch = checkTextAgainstPendingPuzzles(game, allLines.join(' ') + ' ' + subject, 'message_board');
+      if (puzzleMatch) {
+        await applyPuzzleSolvedEffects(game, puzzleMatch.puzzleTag, 'message_board');
+      }
+    }
+
     terminal.moveTo(frame.currentRow + 1, frame.contentLeft);
     terminal.write(c(Color.LightGreen, 'Message posted!'));
   } else {

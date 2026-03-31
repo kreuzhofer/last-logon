@@ -151,12 +151,13 @@ export async function terminalScreen(session: Session, frame: ScreenFrame, game:
       return;
     }
 
-    if (input.toLowerCase() === 'p' || input.toLowerCase() === 'puzzle') {
-      await puzzleMenu(session, frame, game);
-      chatLines = await renderMessages();
-      scrollOffset = -1;
-      await drawChat(chatLines);
-      continue;
+    // Check player input for puzzle answers (deterministic fallback)
+    const { checkTextAgainstPendingPuzzles, applyPuzzleSolvedEffects: applySolved } = await import('./puzzles/puzzle-recognizer.js');
+    const puzzleMatch = checkTextAgainstPendingPuzzles(game, input, 'chat');
+    if (puzzleMatch) {
+      await applySolved(game, puzzleMatch.puzzleTag, 'chat');
+      const refreshedG = await getPlayerGame(game.userId);
+      if (refreshedG) game = refreshedG;
     }
 
     // Scroll commands
